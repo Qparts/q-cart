@@ -21,7 +21,7 @@ import javax.ws.rs.core.Response;
 import java.io.Serializable;
 import java.util.*;
 
-@Path("/internal/api/v2/")
+@Path("/api/v2/")
 @Consumes(MediaType.APPLICATION_JSON)
 @Produces(MediaType.APPLICATION_JSON)
 public class CartApiV2 implements Serializable {
