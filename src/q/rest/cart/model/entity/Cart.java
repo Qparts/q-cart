@@ -24,7 +24,7 @@ public class Cart implements Serializable {
     @Column(name="created_by")
     private int createdBy;
     @Column(name="status")
-    private char status;
+    private char status;//I = initial cart, T = waiting transfer, N = new cart, F = failed to pay cart!
     @Column(name="app_code")
     private int appCode;
     @Column(name="vat_percentage")

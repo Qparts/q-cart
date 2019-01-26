@@ -16,6 +16,9 @@ public class CartGatewayFirstResponse implements Serializable {
     @Column(name="id")
     private long id;
 
+    @Column(name="status")
+    private char status;//I=initial state, P=paid, F=failed
+
     @Column(name="cart_id")
     private long cartId;
 
@@ -79,6 +82,13 @@ public class CartGatewayFirstResponse implements Serializable {
         this.createdBy = createdBy;
         this.gPaymentId = ccr.getId();
         this.gStatus = ccr.getStatus();
+
+        if(gStatus.equals("initiated"))
+            this.status = 'I';//initiated
+        else if(gStatus.equals("succeeded"))
+            this.status = 'P';//paid
+        else
+            this.status = 'F';//failed
         this.gAmount = ccr.getAmount();
         this.gFee = ccr.getFee();
         this.gCurrency = ccr.getCurrency();
@@ -234,5 +244,17 @@ public class CartGatewayFirstResponse implements Serializable {
 
     public void setgTransactionUrl(String gTransactionUrl) {
         this.gTransactionUrl = gTransactionUrl;
+    }
+
+    public char getStatus() {
+        return status;
+    }
+
+    public void setStatus(char status) {
+        this.status = status;
+    }
+
+    public void setCreatedBy(int createdBy) {
+        this.createdBy = createdBy;
     }
 }

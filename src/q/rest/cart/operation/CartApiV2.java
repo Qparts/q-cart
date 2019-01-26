@@ -9,6 +9,7 @@ import q.rest.cart.model.entity.*;
 import q.rest.cart.model.moyasar.*;
 import q.rest.cart.model.publiccontract.CartItemRequest;
 import q.rest.cart.model.publiccontract.CartRequest;
+import q.rest.cart.model.publiccontract.ThreeDConfirmRequest;
 
 import javax.ejb.EJB;
 import javax.ws.rs.*;
@@ -87,6 +88,7 @@ public class CartApiV2 implements Serializable {
             double amount = calculateAmount(cart);
             PaymentResponseCC ccr = createMoyassarCreditCardRequest(cartRequest, cart, amount);
             if(ccr == null || ccr.getStatus().equals("failed")){
+                this.updateCartStatus(cart, 'F');
                 return Response.status(401).entity("Payment refused").build();
             }
 
@@ -187,22 +189,20 @@ public class CartApiV2 implements Serializable {
         paymentRequest.setCurrency("SAR");
         paymentRequest.setDescription("QParts Cart # " + cart.getId());
         Response r = this.postSecuredRequestAndLog(AppConstants.MOYASAR_API_URL, paymentRequest, Helper.getMoyaserSecurityHeader());
-        System.out.println(r.getStatus());
         if (r.getStatus() == 200 || r.getStatus() == 201) {
             PaymentResponseCC ccr = r.readEntity(PaymentResponseCC.class);
             CartGatewayFirstResponse cg = new CartGatewayFirstResponse(ccr, cart, 0);
             dao.persist(cg);
             if(ccr.getStatus().equals("succeeded")){
                 //fund wallet
-                this.fundWalletByCreditCard(amount, ccr, 0, cart.getCustomerId());
+                this.fundWalletByCreditCard(amount, ccr.getFee(), ccr.getSource().getCompany(), ccr.getId(), 0, cart.getCustomerId());
                 //update cart status
                 this.updateCartStatus(cart, 'N');
             }
             return ccr;
         }
         else{
-            String response = r.readEntity(String.class);
-            System.out.println(response);
+
         }
         return null;
     }
@@ -274,38 +274,54 @@ public class CartApiV2 implements Serializable {
 
     @SecuredCustomer
     @POST
-    @Path("confirm-payment/credit-card")
-    public Response confirmCreditCardPayment(@HeaderParam("Authorization") String header) {
+    @Path("payment/3dsecure-response")
+    public Response confirmCreditCardPayment(@HeaderParam("Authorization") String header, ThreeDConfirmRequest _3d) {
         try {
 
   //          isValidCustomerOperation(header, customerId);
             //check if same customer is creating the call
 
+            Cart cart = dao.find(Cart.class, _3d.getCartId());
             //check if amount matches the requested amount in moyasser request object
-
-            //fund wallet with the amount
-//            fundWalletByCreditCard(amount, ccr, createdBy)
+            String jpql = "select b from CartGatewayFirstResponse b where b.gPaymentId = :value0 and b.customerId = :value1 and b.status = :value2";
+            CartGatewayFirstResponse gateway = dao.findJPQLParams(CartGatewayFirstResponse.class, jpql, _3d.getPaymentId(), _3d.getCustomerId(), 'I');
+            if(_3d.getStatus().equals("paid")){
+                double temp = gateway.getgFee();
+                double fee = temp /100;
+                temp = gateway.getgAmount();
+                double amount = temp /100;
+                //fund wallet with the amount
+                fundWalletByCreditCard(amount, fee, gateway.getgCompany(), gateway.getgPaymentId(), 0 , gateway.getCustomerId());
+                gateway.setStatus('P');
+                dao.update(gateway);
+                this.updateCartStatus(cart, 'N');
+            }
+            else{
+                gateway.setStatus('F');
+                dao.update(gateway);
+                this.updateCartStatus(cart, 'F');
+            }
             //respond with 201 accepted
-            return Response.status(500).build();
+            return Response.status(201).build();
         } catch (Exception ex) {
             return Response.status(500).build();
         }
     }
 
 
-    private void fundWalletByCreditCard(double amount, PaymentResponseCC ccr, int createdBy, long customerId){
+    private void fundWalletByCreditCard(double amount, double fee, String ccCompany, String transactionId, int createdBy, long customerId){
         CustomerWallet wallet = new CustomerWallet();
         wallet.setAmount(amount);
         wallet.setBankId(null);
-        wallet.setCcCompany(ccr.getSource().getCompany());
+        wallet.setCcCompany(ccCompany);
         wallet.setCreated(new Date());
         wallet.setCreatedBy(0);
-        wallet.setCreditCharges(ccr.getFee());
+        wallet.setCreditCharges(fee);
         wallet.setCurrency("SAR");
         wallet.setCustomerId(customerId);
         wallet.setGateway("Moyasar");
         wallet.setMethod('C');//credit card
-        wallet.setTransactionId(ccr.getId());
+        wallet.setTransactionId(transactionId);
         wallet.setWalletType('P');
     }
 
