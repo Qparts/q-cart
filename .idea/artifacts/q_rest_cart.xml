@@ -1,0 +1,18 @@
+<component name="ArtifactManager">
+  <artifact type="war" name="q-rest-cart">
+    <output-path>$PROJECT_DIR$/out/artifacts/q_rest_cart_war_exploded.war</output-path>
+    <root id="archive" name="q-rest-cart.war">
+      <element id="javaee-facet-resources" facet="q-rest-cart/web/Web" />
+      <element id="directory" name="WEB-INF">
+        <element id="directory" name="classes">
+          <element id="module-output" name="q-rest-cart" />
+        </element>
+        <element id="directory" name="lib">
+          <element id="file-copy" path="$PROJECT_DIR$/web/WEB-INF/lib/jackson-databind-2.9.0.jar" />
+          <element id="file-copy" path="$PROJECT_DIR$/web/WEB-INF/lib/jackson-core-2.9.0.jar" />
+          <element id="file-copy" path="$PROJECT_DIR$/web/WEB-INF/lib/jackson-annotations-2.8.5.jar" />
+        </element>
+      </element>
+    </root>
+  </artifact>
+</component>
