@@ -188,7 +188,7 @@ public class CartApiV2 implements Serializable {
         paymentRequest.setDescription("QParts Cart # " + cart.getId());
         Response r = this.postSecuredRequestAndLog(AppConstants.MOYASAR_API_URL, paymentRequest, Helper.getMoyaserSecurityHeader());
         System.out.println(r.getStatus());
-        if (r.getStatus() == 200) {
+        if (r.getStatus() == 200 || r.getStatus() == 201) {
             PaymentResponseCC ccr = r.readEntity(PaymentResponseCC.class);
             CartGatewayFirstResponse cg = new CartGatewayFirstResponse(ccr, cart, 0);
             dao.persist(cg);
