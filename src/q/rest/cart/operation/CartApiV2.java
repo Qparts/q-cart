@@ -35,21 +35,29 @@ public class CartApiV2 implements Serializable {
     public Response createCartWireTransfer(@HeaderParam("Authorization") String header, CartRequest cartRequest) {
         try {
             //check if same customer is creating the call and that prices are valid
+            System.out.println(1);
             if (!isValidCustomerOperation(header, cartRequest.getCustomerId())
                     || !isValidPrices(header, cartRequest)) {
                 return Response.status(401).entity("invalid access").build();
             }
+            System.out.println(2);
 
             //check if cart is not redundant
             if (isRedudant(cartRequest.getCustomerId(), new Date())) {
                 return Response.status(429).entity("Too many requests").build();
             }
+            System.out.println(3);
             Cart cart = createAndPrepareCartForPayment(header, cartRequest, 'W');
+            System.out.println(4);
             double amount = calculateAmount(cart);
+            System.out.println(5);
             createWireTransferRequest(cart.getId(), cartRequest.getCustomerId(), amount);
+            System.out.println(6);
             updateCartStatus(cart, 'T');
+            System.out.println(7);
             Map<String, Object> map = new HashMap<>();
             map.put("cartId", cart.getId());
+            System.out.println(9);
             return Response.status(200).entity(map).build();
         } catch (Exception ex) {
             return Response.status(500).build();
@@ -297,8 +305,15 @@ public class CartApiV2 implements Serializable {
     }
 
     private boolean isValidCustomerOperation(String header, long customerId) {
-        Response r = this.getSecuredRequest(AppConstants.getValidateCusomer(customerId), header);
-        return r.getStatus() == 100;
+        try {
+            System.out.println("calling customer api");
+            Response r = this.getSecuredRequest(AppConstants.getValidateCustomer(customerId), header);
+            System.out.println("received " + r.getStatus());
+            return r.getStatus() == 100;
+        }catch(Exception re){
+            System.out.println("test");
+            return true;
+        }
     }
 
     private boolean isValidCreditCardInfo(CartRequest cartRequest) {
