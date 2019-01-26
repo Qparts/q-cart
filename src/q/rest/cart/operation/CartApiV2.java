@@ -75,7 +75,7 @@ public class CartApiV2 implements Serializable {
             }
             //check if same customer is creating the call and that prices are valid
             if (!isValidCustomerOperation(header, cartRequest.getCustomerId())
-                    || isValidPrices(header, cartRequest)) {
+                    || !isValidPrices(header, cartRequest)) {
                 return Response.status(401).entity("Invalid access").build();
             }
             //check if cart is not redundant
