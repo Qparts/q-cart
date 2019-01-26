@@ -50,7 +50,7 @@ public class CartApiV2 implements Serializable {
             updateCartStatus(cart, 'T');
             Map<String, Object> map = new HashMap<>();
             map.put("cartId", cart.getId());
-            return Response.status(201).entity(map).build();
+            return Response.status(200).entity(map).build();
         } catch (Exception ex) {
             return Response.status(500).build();
         }
