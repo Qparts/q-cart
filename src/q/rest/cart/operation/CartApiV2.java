@@ -199,6 +199,10 @@ public class CartApiV2 implements Serializable {
             }
             return ccr;
         }
+        else{
+            String response = r.readEntity(String.class);
+            System.out.println(response);
+        }
         return null;
     }
 
