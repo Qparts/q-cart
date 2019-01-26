@@ -19,11 +19,11 @@ public class Helper {
 
     public static String getMoyaserSecurityHeader() {
         try {
-      //      return AppConstants.MOYASAR_TEST_PUBLISHABLE_KEY;
             String input = AppConstants.MOYASAR_TEST_PUBLISHABLE_KEY;
             byte bytes[] ;
             bytes = input.getBytes("ISO-8859-1");
-            return Base64.getEncoder().encodeToString(bytes);
+            String key= Base64.getEncoder().encodeToString(bytes);
+            return "Basic " + key;
         } catch (Exception e) {
             return "";
         }
