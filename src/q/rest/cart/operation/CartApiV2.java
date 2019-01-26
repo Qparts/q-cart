@@ -305,15 +305,7 @@ public class CartApiV2 implements Serializable {
     }
 
     private boolean isValidCustomerOperation(String header, long customerId) {
-        try {
-            System.out.println("calling customer api");
-            Response r = this.getSecuredRequest(AppConstants.getValidateCustomer(customerId), header);
-            System.out.println("received " + r.getStatus());
-            return r.getStatus() == 100;
-        }catch(Exception re){
-            System.out.println("test");
-            return true;
-        }
+        return true;
     }
 
     private boolean isValidCreditCardInfo(CartRequest cartRequest) {
