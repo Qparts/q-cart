@@ -2,18 +2,18 @@ package q.rest.cart.model.publiccontract;
 
 public class ThreeDConfirmRequest {
 
-    private String paymentId;
+    private String id;
     private String status;
     private long customerId;
     private long cartId;
 
 
-    public String getPaymentId() {
-        return paymentId;
+    public String getId() {
+        return id;
     }
 
-    public void setPaymentId(String paymentId) {
-        this.paymentId = paymentId;
+    public void setId(String id) {
+        this.id = id;
     }
 
     public String getStatus() {

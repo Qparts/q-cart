@@ -273,7 +273,7 @@ public class CartApiV2 implements Serializable {
     }
 
     @SecuredCustomer
-    @POST
+    @PUT
     @Path("payment/3dsecure-response")
     public Response confirmCreditCardPayment(@HeaderParam("Authorization") String header, ThreeDConfirmRequest _3d) {
         try {
@@ -284,7 +284,7 @@ public class CartApiV2 implements Serializable {
             Cart cart = dao.find(Cart.class, _3d.getCartId());
             //check if amount matches the requested amount in moyasser request object
             String jpql = "select b from CartGatewayFirstResponse b where b.gPaymentId = :value0 and b.customerId = :value1 and b.status = :value2";
-            CartGatewayFirstResponse gateway = dao.findJPQLParams(CartGatewayFirstResponse.class, jpql, _3d.getPaymentId(), _3d.getCustomerId(), 'I');
+            CartGatewayFirstResponse gateway = dao.findJPQLParams(CartGatewayFirstResponse.class, jpql, _3d.getId(), _3d.getCustomerId(), 'I');
             if(_3d.getStatus().equals("paid")){
                 double temp = gateway.getgFee();
                 double fee = temp /100;

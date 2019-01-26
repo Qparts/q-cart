@@ -36,7 +36,7 @@ public class AppConstants {
     }
 
     public static final String getPaymentCallbackUrl(long cartId){
-        return PAYMENT_CALLBACK_URL_BASE + "/" + cartId;
+        return PAYMENT_CALLBACK_URL_BASE + "?cartId=" + cartId;
     }
 
 
