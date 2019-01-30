@@ -11,6 +11,7 @@
           <element id="file-copy" path="$PROJECT_DIR$/web/WEB-INF/lib/jackson-databind-2.9.0.jar" />
           <element id="file-copy" path="$PROJECT_DIR$/web/WEB-INF/lib/jackson-core-2.9.0.jar" />
           <element id="file-copy" path="$PROJECT_DIR$/web/WEB-INF/lib/jackson-annotations-2.8.5.jar" />
+          <element id="library" level="project" name="junit:junit:4.11" />
         </element>
       </element>
     </root>

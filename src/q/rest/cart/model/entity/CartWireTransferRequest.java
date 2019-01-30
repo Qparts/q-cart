@@ -41,6 +41,19 @@ public class CartWireTransferRequest implements Serializable {
     @Column(name="processed_by")
     private Integer processedBy;
 
+
+    @Transient
+    private Cart cart;
+
+
+    public Cart getCart() {
+        return cart;
+    }
+
+    public void setCart(Cart cart) {
+        this.cart = cart;
+    }
+
     public long getId() {
         return id;
     }

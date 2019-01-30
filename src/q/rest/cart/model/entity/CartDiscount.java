@@ -16,8 +16,9 @@ public class CartDiscount implements Serializable {
     private long id;
     @Column(name="cart_id")
     private long cartId;
-    @Column(name="discount_id")
-    private long discountId;
+    @JoinColumn(name="discount_id")
+    @ManyToOne
+    private Discount discount;
     @Column(name="created")
     @Temporal(TemporalType.TIMESTAMP)
     private Date created;
@@ -41,12 +42,13 @@ public class CartDiscount implements Serializable {
         this.cartId = cartId;
     }
 
-    public long getDiscountId() {
-        return discountId;
+
+    public Discount getDiscount() {
+        return discount;
     }
 
-    public void setDiscountId(long discountId) {
-        this.discountId = discountId;
+    public void setDiscount(Discount discount) {
+        this.discount = discount;
     }
 
     public Date getCreated() {

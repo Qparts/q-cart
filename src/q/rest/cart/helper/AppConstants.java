@@ -9,10 +9,10 @@ public class AppConstants {
     private static final String CUSTOMER_SERVICE = SysProps.getValue("customerService");
 
     private static final String PAYMENT_CALLBACK_URL_BASE = SysProps.getValue("paymentBaseCallbackUrl");
-    public final static String MOYASAR_TEST_PUBLISHABLE_KEY = "pk_test_SugzkCgR72VgXxQHiYg7wVYSE7pCzYr5REYwVqQr";
-    public final static String MOYASAR_LIVE_PUBLISHABLE_KEY = "pk_live_hGjxBboyUBKPghFg8E5q9UPYraJ1ueH7y8QyWPVG";
+//    public final static String MOYASAR_TEST_PUBLISHABLE_KEY = "pk_test_SugzkCgR72VgXxQHiYg7wVYSE7pCzYr5REYwVqQr";
+ //   public final static String MOYASAR_LIVE_PUBLISHABLE_KEY = "pk_live_hGjxBboyUBKPghFg8E5q9UPYraJ1ueH7y8QyWPVG";
+    public static final String MOYASAR_KEY = SysProps.getValue("moyasarKey");
     public final static String MOYASAR_API_URL = "https://api.moyasar.com/v1/payments";
-
 
     //AWS
     private static final String AMAZON_S3_PATH = SysProps.getValue("amazonS3Path");

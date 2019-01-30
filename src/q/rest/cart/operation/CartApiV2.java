@@ -9,6 +9,7 @@ import q.rest.cart.model.entity.*;
 import q.rest.cart.model.moyasar.*;
 import q.rest.cart.model.publiccontract.CartItemRequest;
 import q.rest.cart.model.publiccontract.CartRequest;
+import q.rest.cart.model.publiccontract.PublicBank;
 import q.rest.cart.model.publiccontract.ThreeDConfirmRequest;
 
 import javax.ejb.EJB;
@@ -36,29 +37,20 @@ public class CartApiV2 implements Serializable {
     public Response createCartWireTransfer(@HeaderParam("Authorization") String header, CartRequest cartRequest) {
         try {
             //check if same customer is creating the call and that prices are valid
-            System.out.println(1);
             if (!isValidCustomerOperation(header, cartRequest.getCustomerId())
                     || !isValidPrices(header, cartRequest)) {
                 return Response.status(401).entity("invalid access").build();
             }
-            System.out.println(2);
-
             //check if cart is not redundant
             if (isRedudant(cartRequest.getCustomerId(), new Date())) {
                 return Response.status(429).entity("Too many requests").build();
             }
-            System.out.println(3);
             Cart cart = createAndPrepareCartForPayment(header, cartRequest, 'W');
-            System.out.println(4);
-            double amount = calculateAmount(cart);
-            System.out.println(5);
+            double amount = cart.getGrandTotal();
             createWireTransferRequest(cart.getId(), cartRequest.getCustomerId(), amount);
-            System.out.println(6);
             updateCartStatus(cart, 'T');
-            System.out.println(7);
             Map<String, Object> map = new HashMap<>();
             map.put("cartId", cart.getId());
-            System.out.println(9);
             return Response.status(200).entity(map).build();
         } catch (Exception ex) {
             return Response.status(500).build();
@@ -85,7 +77,7 @@ public class CartApiV2 implements Serializable {
             }
             //check payment method
             Cart cart = createAndPrepareCartForPayment(header, cartRequest, 'C');
-            double amount = calculateAmount(cart);
+            double amount = cart.getGrandTotal();
             PaymentResponseCC ccr = createMoyassarCreditCardRequest(cartRequest, cart, amount);
             if(ccr == null || ccr.getStatus().equals("failed")){
                 this.updateCartStatus(cart, 'F');
@@ -107,6 +99,54 @@ public class CartApiV2 implements Serializable {
         }
     }
 
+
+    @SecuredCustomer
+    @PUT
+    @Path("payment/3dsecure-response")
+    public Response confirmCreditCardPayment(@HeaderParam("Authorization") String header, ThreeDConfirmRequest _3d) {
+        try {
+            //isValidCustomerOperation(header, customerId);
+            //check if same customer is creating the call
+
+            Cart cart = dao.find(Cart.class, _3d.getCartId());
+            //check if amount matches the requested amount in moyasser request object
+            String jpql = "select b from CartGatewayFirstResponse b where b.gPaymentId = :value0 and b.customerId = :value1 and b.status = :value2";
+            CartGatewayFirstResponse gateway = dao.findJPQLParams(CartGatewayFirstResponse.class, jpql, _3d.getId(), _3d.getCustomerId(), 'I');
+            if(_3d.getStatus().equals("paid")){
+                double temp = gateway.getgFee();
+                double fee = temp /100D;
+                temp = gateway.getgAmount();
+                double amount = temp /100D;
+                //fund wallet with the amount
+                fundWalletByCreditCard(amount, fee, gateway.getgCompany(), gateway.getgPaymentId(), 0 , gateway.getCustomerId());
+                gateway.setStatus('P');
+                dao.update(gateway);
+                this.updateCartStatus(cart, 'N');
+            }
+            else{
+                gateway.setStatus('F');
+                dao.update(gateway);
+                this.updateCartStatus(cart, 'F');
+            }
+            //respond with 201 accepted
+            return Response.status(201).build();
+        } catch (Exception ex) {
+            return Response.status(500).build();
+        }
+    }
+
+    @SecuredCustomer
+    @GET
+    @Path("banks")
+    public Response getActiveBanksCustomer() {
+        try {
+            List<PublicBank> banks = dao.getCondition(PublicBank.class, "customerStatus", 'A');
+            return Response.status(200).entity(banks).build();
+        }catch(Exception ex) {
+            return Response.status(500).build();
+        }
+    }
+
     private Cart createAndPrepareCartForPayment(String header, CartRequest cartRequest, char paymentMethod){
         Cart cart = createCart(header, cartRequest.getCustomerId(), paymentMethod);
         List<CartProduct> cartProducts = createCartProducts(cart.getId(), cartRequest.getCartItems());
@@ -116,27 +156,6 @@ public class CartApiV2 implements Serializable {
         CartDiscount cartDiscount = createCartDiscount(cart.getId(), cartRequest.getCustomerId(), cartRequest.getDiscountId());
         cart.setCartDiscount(cartDiscount);
         return cart;
-    }
-
-
-    private double calculateAmount(Cart cart) {
-        double productsPrice = 0;
-        double discountAmount = 0;
-        double deliveryCharges = cart.getCartDelivery().getDeliveryCharges();
-
-        for (CartProduct cp : cart.getCartProducts()) {
-            productsPrice += cp.getSalesPrice() * cp.getQuantity();
-        }
-
-        if (cart.getCartDiscount() != null) {
-            Discount discount = dao.find(Discount.class, cart.getCartDiscount().getDiscountId());
-            if (discount.getDiscountType() == 'P') {
-                discountAmount = discount.getPercentage() * productsPrice;
-            } else if (discount.getDiscountType() == 'D') {
-                discountAmount = cart.getCartDelivery().getDeliveryCharges();
-            }
-        }
-        return productsPrice + discountAmount + deliveryCharges;
     }
 
 
@@ -212,6 +231,7 @@ public class CartApiV2 implements Serializable {
         for (CartItemRequest cir : items) {
             CartProduct cp = new CartProduct();
             cp.setCartId(cartId);
+            cp.setSalesPrice(cir.getSalesPrice());
             cp.setCreated(new Date());
             cp.setCreatedBy(0);
             cp.setQuantity(cir.getQuantity());
@@ -265,53 +285,19 @@ public class CartApiV2 implements Serializable {
             cartDiscount.setCartId(cardId);
             cartDiscount.setCreated(new Date());
             cartDiscount.setCreatedBy(0);
-            cartDiscount.setDiscountId(discount.getId());
+            cartDiscount.setDiscount(discount);
             dao.persist(cartDiscount);
         }
 
         return cartDiscount;
     }
 
-    @SecuredCustomer
-    @PUT
-    @Path("payment/3dsecure-response")
-    public Response confirmCreditCardPayment(@HeaderParam("Authorization") String header, ThreeDConfirmRequest _3d) {
-        try {
-
-  //          isValidCustomerOperation(header, customerId);
-            //check if same customer is creating the call
-
-            Cart cart = dao.find(Cart.class, _3d.getCartId());
-            //check if amount matches the requested amount in moyasser request object
-            String jpql = "select b from CartGatewayFirstResponse b where b.gPaymentId = :value0 and b.customerId = :value1 and b.status = :value2";
-            CartGatewayFirstResponse gateway = dao.findJPQLParams(CartGatewayFirstResponse.class, jpql, _3d.getId(), _3d.getCustomerId(), 'I');
-            if(_3d.getStatus().equals("paid")){
-                double temp = gateway.getgFee();
-                double fee = temp /100;
-                temp = gateway.getgAmount();
-                double amount = temp /100;
-                //fund wallet with the amount
-                fundWalletByCreditCard(amount, fee, gateway.getgCompany(), gateway.getgPaymentId(), 0 , gateway.getCustomerId());
-                gateway.setStatus('P');
-                dao.update(gateway);
-                this.updateCartStatus(cart, 'N');
-            }
-            else{
-                gateway.setStatus('F');
-                dao.update(gateway);
-                this.updateCartStatus(cart, 'F');
-            }
-            //respond with 201 accepted
-            return Response.status(201).build();
-        } catch (Exception ex) {
-            return Response.status(500).build();
-        }
-    }
 
 
     private void fundWalletByCreditCard(double amount, double fee, String ccCompany, String transactionId, int createdBy, long customerId){
         CustomerWallet wallet = new CustomerWallet();
         wallet.setAmount(amount);
+        wallet.setBankId(null);
         wallet.setBankId(null);
         wallet.setCcCompany(ccCompany);
         wallet.setCreated(new Date());
@@ -323,14 +309,46 @@ public class CartApiV2 implements Serializable {
         wallet.setMethod('C');//credit card
         wallet.setTransactionId(transactionId);
         wallet.setWalletType('P');
+        dao.persist(wallet);
+    }
+
+    @GET
+    @Path("test")
+    public void test(@HeaderParam("Authorization") String header){
+        isValidCustomerOperation(header, 6);
     }
 
     private boolean isValidCustomerOperation(String header, long customerId) {
-        return true;
+        Response r = this.getSecuredRequest(AppConstants.getValidateCustomer(customerId), header);
+        return r.getStatus() == 204;
     }
 
     private boolean isValidCreditCardInfo(CartRequest cartRequest) {
-        return true;
+        boolean valid = true;
+        Calendar calendar = Calendar.getInstance();
+        calendar.set(Calendar.YEAR, cartRequest.getCcYear());
+        calendar.set(Calendar.MONTH, cartRequest.getCcMonth());
+        calendar.set(Calendar.DAY_OF_MONTH, calendar.getActualMaximum(Calendar.DAY_OF_MONTH));
+        calendar.set(Calendar.HOUR_OF_DAY, 23);
+        calendar.set(Calendar.MINUTE, 59);
+        calendar.set(Calendar.SECOND, 59);
+        Calendar current = Calendar.getInstance();
+        if(calendar.before(current)){
+            valid = false;
+        }
+
+        if(!cartRequest.getCcCvc().matches("([0-9]{3})")){
+            valid = false;
+        }
+
+        if(!cartRequest.getCcName().trim().contains(" ")){
+            valid = false;
+        }
+
+        if(!cartRequest.getCcNumber().matches("^(?:4[0-9]{12}(?:[0-9]{3})?|5[1-5][0-9]{14})$")){
+            valid = false;
+        }
+        return valid;
     }
 
 

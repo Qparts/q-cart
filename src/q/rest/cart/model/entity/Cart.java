@@ -1,5 +1,7 @@
 package q.rest.cart.model.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import javax.persistence.*;
 import java.io.Serializable;
 import java.util.Date;
@@ -37,7 +39,71 @@ public class Cart implements Serializable {
     private CartDelivery cartDelivery;
     @Transient
     private CartDiscount cartDiscount;
+    @Transient
+    private List<CartComment> cartComments;
 
+    @JsonIgnore
+    public double getProductsTotal(){
+        double total = 0;
+        try{
+            for(CartProduct cartProduct : cartProducts){
+                total += (cartProduct.getSalesPrice() * cartProduct.getQuantity());
+            }
+
+        }catch(NullPointerException ex){
+            total = 0;
+        }
+        return total;
+    }
+
+    @JsonIgnore
+    public double getDeliveryFees(){
+        try{
+            return cartDelivery.getDeliveryCharges();
+        }catch(NullPointerException ex){
+            return 0;
+        }
+    }
+
+    @JsonIgnore
+    public double getDiscountTotal(){
+        try{
+            if(cartDiscount.getDiscount().getDiscountType() == 'P'){
+                return -1 * cartDiscount.getDiscount().getPercentage() * getProductsTotal();
+            }
+            if(cartDiscount.getDiscount().getDiscountType() == 'D'){
+                return -1 * getDeliveryFees();
+            }
+            throw new NullPointerException();
+        }catch (NullPointerException nu){
+            return 0;
+        }
+    }
+
+
+    @JsonIgnore
+    public double getSubTotal(){
+        return getProductsTotal() +  getDeliveryFees() +  getDiscountTotal();
+    }
+
+    @JsonIgnore
+    public double getVat(){
+        return getSubTotal() * vatPercentage;
+    }
+
+    @JsonIgnore
+    public double getGrandTotal(){
+        return getSubTotal() + getVat();
+    }
+
+
+    public List<CartComment> getCartComments() {
+        return cartComments;
+    }
+
+    public void setCartComments(List<CartComment> cartComments) {
+        this.cartComments = cartComments;
+    }
 
     public CartDiscount getCartDiscount() {
         return cartDiscount;

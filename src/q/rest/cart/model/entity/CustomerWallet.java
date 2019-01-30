@@ -1,22 +1,42 @@
 package q.rest.cart.model.entity;
 
+import javax.inject.Named;
+import javax.persistence.*;
 import java.io.Serializable;
 import java.util.Date;
 
+@Table(name="crt_customer_wallet")
+@Entity
 public class CustomerWallet implements Serializable {
 
+    @Id
+    @Column(name="id")
+    @SequenceGenerator(name = "crt_customer_wallet_id_seq_gen", sequenceName = "crt_customer_wallet_id_seq", initialValue=1, allocationSize = 1)
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "crt_customer_wallet_id_seq_gen")
     private long id;
+    @Column(name="customer_id")
     private long customerId;
+    @Column(name="amount")
     private double amount;
-    private char method;
+    @Column(name="payment_method")
+    private char method;//C = credit card, W= wire transfer!
+    @Column(name="credit_charges")
     private double creditCharges;
+    @Column(name="gateway")
     private String gateway;
+    @Column(name="created")
     private Date created;
+    @Column(name="created_by")
     private int createdBy;
+    @Column(name="transaction_id")
     private String transactionId;
+    @Column(name="currency")
     private String currency;
+    @Column(name="wallet_type")
     private char walletType;
+    @Column(name="cc_company")
     private String ccCompany;
+    @Column(name="bank_id")
     private Integer bankId;
 
     public long getId() {
