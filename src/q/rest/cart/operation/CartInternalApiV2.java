@@ -50,7 +50,6 @@ public class CartInternalApiV2 {
         }catch (Exception ex){
             return Response.status(500).build();
         }
-
     }
 
 
@@ -220,6 +219,25 @@ public class CartInternalApiV2 {
             dao.persist(comment);
             return Response.status(201).build();
         }catch (Exception ex){
+            return Response.status(500).build();
+        }
+    }
+
+
+
+    @SecuredUser
+    @GET
+    @Path("carts-notification")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response getAwaitingWalletsNotification() {
+        try {
+            String jpql = "select count(b) from Cart b where b.status in (:value0 , :value1 , :value2)";
+            Long l = dao.findJPQLParams(Long.class, jpql, 'A', 'P' , 'S');
+            if(l == null) {
+                l = 0L;
+            }
+            return Response.status(200).entity(l).build();
+        }catch(Exception ex) {
             return Response.status(500).build();
         }
     }
