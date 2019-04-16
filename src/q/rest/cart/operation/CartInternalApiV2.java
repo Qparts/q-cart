@@ -21,6 +21,9 @@ public class CartInternalApiV2 {
     @EJB
     private DAO dao;
 
+    @EJB
+    private AsyncService async;
+
 
     @SecuredUser
     @GET
@@ -195,6 +198,7 @@ public class CartInternalApiV2 {
                     dao.update(fwwt.getWireTransfer().getCart());
                 }
             }
+            async.broadcastToNotification("wireRequests," + async.getWireRequestCount());
             return Response.status(201).build();
         }catch (Exception ex){
             return Response.status(500).build();
@@ -217,12 +221,12 @@ public class CartInternalApiV2 {
             comment.setText("Transfer Cancelled");
             comment.setVisibleToCustomer(false);
             dao.persist(comment);
+            async.broadcastToNotification("wireRequests," + async.getWireRequestCount());
             return Response.status(201).build();
         }catch (Exception ex){
             return Response.status(500).build();
         }
     }
-
 
 
     @SecuredUser

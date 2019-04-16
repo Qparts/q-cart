@@ -31,6 +31,9 @@ public class CartApiV2 implements Serializable {
     @EJB
     private DAO dao;
 
+    @EJB
+    private AsyncService async;
+
     @SecuredCustomer
     @POST
     @Path("cart/wire-transfer")
@@ -51,6 +54,7 @@ public class CartApiV2 implements Serializable {
             updateCartStatus(cart, 'T');
             Map<String, Object> map = new HashMap<>();
             map.put("cartId", cart.getId());
+            async.broadcastToNotification("wireRequests," + async.getWireRequestCount());
             return Response.status(200).entity(map).build();
         } catch (Exception ex) {
             return Response.status(500).build();
@@ -88,6 +92,7 @@ public class CartApiV2 implements Serializable {
             map.put("cartId", cart.getId());
 
             if(ccr.getStatus().equals("succeeded")){
+                async.broadcastToNotification("processCarts," + async.getProcessCartCount());
                 return Response.status(200).entity(map).build();
             }
             //initiated!
@@ -129,6 +134,7 @@ public class CartApiV2 implements Serializable {
                 this.updateCartStatus(cart, 'F');
             }
             //respond with 201 accepted
+            async.broadcastToNotification("processCarts," + async.getProcessCartCount());
             return Response.status(201).build();
         } catch (Exception ex) {
             return Response.status(500).build();
@@ -310,12 +316,6 @@ public class CartApiV2 implements Serializable {
         wallet.setTransactionId(transactionId);
         wallet.setWalletType('P');
         dao.persist(wallet);
-    }
-
-    @GET
-    @Path("test")
-    public void test(@HeaderParam("Authorization") String header){
-        isValidCustomerOperation(header, 6);
     }
 
     private boolean isValidCustomerOperation(String header, long customerId) {

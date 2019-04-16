@@ -21,6 +21,7 @@ public class AppConstants {
 
     public static final String CUSTOMER_MATCH_TOKEN = CUSTOMER_SERVICE + "match-token";
     public static final String USER_MATCH_TOKEN = USER_SERVICE + "match-token";
+    public static final String USER_MATCH_TOKEN_WS = USER_SERVICE + "match-token/ws";
 
 
     public static final String getValidateCustomer(long customerId){
