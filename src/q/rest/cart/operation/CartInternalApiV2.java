@@ -61,8 +61,8 @@ public class CartInternalApiV2 {
     @Path("carts/initiated")
     public Response getInitiatedCarts(){
         try {
-            String jpql = "select b from Cart b where status = :value0 order by b.created";//N
-            List<Cart> carts = dao.getJPQLParams(Cart.class, jpql, 'I');
+            String jpql = "select b from Cart b where status in ( :value0 , :value1) order by b.created";//N
+            List<Cart> carts = dao.getJPQLParams(Cart.class, jpql, 'I', 'T');
             for(Cart cart: carts){
                 initCart(cart);
             }
