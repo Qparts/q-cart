@@ -23,6 +23,9 @@ public class AppConstants {
     public static final String USER_MATCH_TOKEN = USER_SERVICE + "match-token";
     public static final String USER_MATCH_TOKEN_WS = USER_SERVICE + "match-token/ws";
 
+    public static final String POST_WIRE_TRANSFER_EMAIL = CUSTOMER_SERVICE + "email/wire-transfer";
+
+
 
     public static final String getValidateCustomer(long customerId){
         return CUSTOMER_SERVICE + "valid-customer/" + customerId;

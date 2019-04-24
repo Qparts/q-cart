@@ -50,16 +50,20 @@ public class CartApiV2 implements Serializable {
             }
             Cart cart = createAndPrepareCartForPayment(header, cartRequest, 'W');
             double amount = cart.getGrandTotal();
-            createWireTransferRequest(cart.getId(), cartRequest.getCustomerId(), amount);
+            CartWireTransferRequest wireTransfer = createWireTransferRequest(cart.getId(), cartRequest.getCustomerId(), amount);
             updateCartStatus(cart, 'T');
             Map<String, Object> map = new HashMap<>();
             map.put("cartId", cart.getId());
+            async.sendWireTransferEmail(header, cart, wireTransfer);
             async.broadcastToNotification("wireRequests," + async.getWireRequestCount());
             return Response.status(200).entity(map).build();
         } catch (Exception ex) {
             return Response.status(500).build();
         }
     }
+
+
+
 
 
     @SecuredCustomer
@@ -184,7 +188,7 @@ public class CartApiV2 implements Serializable {
         return cart;
     }
 
-    private void createWireTransferRequest(long cartId, long customerId, double amount) {
+    private CartWireTransferRequest createWireTransferRequest(long cartId, long customerId, double amount) {
         CartWireTransferRequest wireTransfer = new CartWireTransferRequest();
         wireTransfer.setAmount(amount);
         wireTransfer.setCartId(cartId);
@@ -195,6 +199,7 @@ public class CartApiV2 implements Serializable {
         wireTransfer.setProcessedBy(null);//
         wireTransfer.setStatus('N');//new, nothing to process
         dao.persist(wireTransfer);
+        return wireTransfer;
     }
 
 
