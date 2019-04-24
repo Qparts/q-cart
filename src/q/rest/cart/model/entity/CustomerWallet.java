@@ -33,7 +33,7 @@ public class CustomerWallet implements Serializable {
     @Column(name="currency")
     private String currency;
     @Column(name="wallet_type")
-    private char walletType;
+    private char walletType;//P = payment , R = Refund, S = Return
     @Column(name="cc_company")
     private String ccCompany;
     @Column(name="bank_id")

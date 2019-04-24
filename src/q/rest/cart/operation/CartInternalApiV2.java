@@ -5,6 +5,7 @@ import q.rest.cart.filter.SecuredUser;
 import q.rest.cart.helper.Helper;
 import q.rest.cart.model.entity.*;
 import q.rest.cart.model.privatecontract.FundWalletWireTransfer;
+import q.rest.cart.model.privatecontract.RefundCartRequest;
 
 import javax.ejb.EJB;
 import javax.ws.rs.*;
@@ -23,6 +24,96 @@ public class CartInternalApiV2 {
 
     @EJB
     private AsyncService async;
+
+    @SecuredUser
+    @GET
+    @Path("wallet-live/{customerId}")
+    public Response getNetWalletAmount(@PathParam(value = "customerId") long customerId) {
+        try{
+            String positiveSql = "select sum(b.amount) from CustomerWallet b where b.customerId = :value0 and b.walletType = :value1 ";
+            String negativeSql = "select sum(c.amount) from CustomerWallet c where c.customerId = :value0 and c.walletType in (:value1 , :value2)";
+            Number numberPositive = dao.findJPQLParams(Number.class, positiveSql, customerId, 'P');
+            if(numberPositive == null){
+                numberPositive = 0;
+            }
+            Number numberNegative = dao.findJPQLParams(Number.class, negativeSql, customerId, 'R', 'S');
+            if(numberNegative == null){
+                numberNegative = 0;
+            }
+            double net = numberPositive.doubleValue() - numberNegative.doubleValue();
+            return Response.status(200).entity(net).build();
+        }catch (Exception ex){
+            return Response.status(500).build();
+        }
+    }
+
+    @SecuredUser
+    @POST
+    @Path("empty-wallet")
+    public Response createEmptyWallet(long customerId){
+        try {
+            CustomerWallet customerWallet = new CustomerWallet();
+            customerWallet.setCustomerId(customerId);
+            customerWallet.setAmount(0);
+            customerWallet.setMethod('W');
+            customerWallet.setCreditCharges(0);
+            customerWallet.setCreatedBy(0);
+            customerWallet.setWalletType('Z');
+            dao.persist(customerWallet);
+            return Response.status(200).entity(customerWallet.getId()).build();
+        }catch (Exception ex){
+            return Response.status(500).build();
+        }
+    }
+
+    @SecuredUser
+    @PUT
+    @Path("cart-refund/wire-transfer")
+    public Response refundCartByWireTransfer(RefundCartRequest refund){
+        try{
+            Cart cart = dao.find(Cart.class, refund.getCartId());
+            CustomerWallet wallet = dao.findTwoConditions(CustomerWallet.class, "id", "walletType", refund.getWalletId(), 'Z');
+            if(wallet == null){
+                return Response.status(404).build();
+            }
+            double total = 0;
+            if(refund.getRefundItemType() == 'P'){
+                for(CartProduct newCp : refund.getCartProducts()){
+                    CartProduct origCp = dao.find(CartProduct.class, newCp.getId());
+                    if(origCp.getQuantity() == newCp.getQuantity()){
+                        total += origCp.getSalesPrice() * origCp.getQuantity();
+                        origCp.setStatus('R');//all refunded
+                        dao.update(origCp);
+                    }
+                    else if(origCp.getQuantity() > newCp.getQuantity()){
+                        total += origCp.getSalesPrice() * newCp.getQuantity();
+                        origCp.setQuantity(origCp.getQuantity() - newCp.getQuantity());
+                        dao.update(origCp);//deduct refunded products and update
+                        newCp.setStatus('R');//create refunded products new entry
+                        newCp.setId(0);
+                        newCp.setCreatedBy(refund.getCreatedBy());
+                        newCp.setCreated(new Date());
+                        newCp.setCartId(origCp.getCartId());
+                        dao.persist(newCp);
+                    }
+                }
+            }
+            double vat = total * 0.05;
+            wallet.setCreated(new Date());
+            wallet.setWalletType('R');
+            wallet.setAmount(total + vat);
+            wallet.setMethod('W');
+            wallet.setCreatedBy(refund.getCreatedBy());
+            wallet.setTransactionId("refund via wire");
+            wallet.setCurrency("SAR");
+            wallet.setCreditCharges(0);
+            wallet.setBankId(refund.getBankId());
+            dao.update(wallet);
+            return Response.status(201).build();
+        }catch (Exception ex){
+            return Response.status(500).build();
+        }
+    }
 
 
     @SecuredUser

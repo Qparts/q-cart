@@ -33,14 +33,12 @@ public class CartWireTransferRequest implements Serializable {
     @Column(name="created_by")
     private int createdBy;
 
-
     @Column(name="processed")
     @Temporal(TemporalType.TIMESTAMP)
     private Date processed;
 
     @Column(name="processed_by")
     private Integer processedBy;
-
 
     @Transient
     private Cart cart;
