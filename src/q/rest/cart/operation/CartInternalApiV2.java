@@ -77,7 +77,7 @@ public class CartInternalApiV2 {
                 return Response.status(404).build();
             }
             double total = 0;
-            if(refund.getRefundItemType() == 'P'){
+            if(refund.isRefundProducts()){
                 for(CartProduct newCp : refund.getCartProducts()){
                     CartProduct origCp = dao.find(CartProduct.class, newCp.getId());
                     if(origCp.getQuantity() == newCp.getQuantity()){
@@ -98,6 +98,12 @@ public class CartInternalApiV2 {
                     }
                 }
             }
+            if(refund.isRefundDelivery()){
+                total += refund.getDeliveryFees();
+                CartDelivery cartDelivery = dao.findCondition(CartDelivery.class, "cartId", cart.getId());
+                cartDelivery.setStatus('R');
+                dao.update(cartDelivery);
+            }
             double vat = total * 0.05;
             wallet.setCreated(new Date());
             wallet.setWalletType('R');
@@ -109,9 +115,34 @@ public class CartInternalApiV2 {
             wallet.setCreditCharges(0);
             wallet.setBankId(refund.getBankId());
             dao.update(wallet);
+            checkAwaitingCartStatus(cart);
             return Response.status(201).build();
         }catch (Exception ex){
             return Response.status(500).build();
+        }
+    }
+
+    private void checkAwaitingCartStatus(Cart cart){
+        String sql = "select b from CartProduct b where b.cartId = :value0 and b.status = :value1";//check if there is any new product
+        List<CartProduct> cartProducts = dao.getJPQLParams(CartProduct.class, sql, cart.getId(), 'N');
+        if(cartProducts.isEmpty()){
+            //check if there are any purchased items
+            sql = "select b from CartProduct b where b.cartId = :value0 and b.status =:value1";
+            List<CartProduct> purchasedProducts = dao.getJPQLParams(CartProduct.class, sql, cart.getId(), 'P');
+            if(purchasedProducts.isEmpty()){
+                //check if there is delivery fee standing
+                sql = "select b from CartDelivery b where b.cartId = :value0 and b.status =:value1";
+                CartDelivery cartDelivery = dao.findJPQLParams(CartDelivery.class, sql, cart.getId(), 'N');//there is waiting cart
+                if(cartDelivery == null){
+                    cart.setStatus('R');//completely refunded
+                    dao.update(cart);
+                }
+                //no new items, and no purchases!
+            }else{
+                //no all purchased
+                //cart.setStatus('P');//set cart as all purchased
+                //dao.update(cart);
+            }
         }
     }
 

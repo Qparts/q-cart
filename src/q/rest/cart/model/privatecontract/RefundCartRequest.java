@@ -8,7 +8,8 @@ public class RefundCartRequest {
     private long cartId;
     private long walletId;
     private List<CartProduct> cartProducts;
-    private char refundItemType;
+    private boolean refundProducts;
+    private boolean refundDelivery;
     private double deliveryFees;
     private char method;
     private int bankId;
@@ -62,12 +63,21 @@ public class RefundCartRequest {
         this.cartProducts = cartProducts;
     }
 
-    public char getRefundItemType() {
-        return refundItemType;
+
+    public boolean isRefundProducts() {
+        return refundProducts;
     }
 
-    public void setRefundItemType(char refundItemType) {
-        this.refundItemType = refundItemType;
+    public void setRefundProducts(boolean refundProducts) {
+        this.refundProducts = refundProducts;
+    }
+
+    public boolean isRefundDelivery() {
+        return refundDelivery;
+    }
+
+    public void setRefundDelivery(boolean refundDelivery) {
+        this.refundDelivery = refundDelivery;
     }
 
     public double getDeliveryFees() {

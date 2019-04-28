@@ -22,7 +22,7 @@ public class CartDelivery implements Serializable {
     @Column(name="preferred_courier")
     private Integer preferredCuorier;
     @Column(name="status")
-    private char status;
+    private char status;//Refunded
     @Column(name="created")
     @Temporal(TemporalType.TIMESTAMP)
     private Date created;
