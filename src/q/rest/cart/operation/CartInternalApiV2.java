@@ -13,6 +13,7 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
 
 @Path("/internal/api/v2/")
 @Consumes(MediaType.APPLICATION_JSON)
@@ -25,6 +26,24 @@ public class CartInternalApiV2 {
     @EJB
     private AsyncService async;
 
+
+
+    @SecuredUser
+    @PUT
+    @Path("cart-product/sold")
+    public Response updateCartProduct(long cartProductId){
+        try{
+            var cp = dao.find(CartProduct.class, cartProductId);
+            cp.setStatus('S');
+            dao.update(cp);
+            checkAwaitingCartStatus(cp.getCartId());
+            return Response.status(201).build();
+        }catch (Exception ex){
+            return Response.status(500).build();
+        }
+
+    }
+
     @SecuredUser
     @GET
     @Path("wallet-live/{customerId}")
@@ -36,7 +55,7 @@ public class CartInternalApiV2 {
             if(numberPositive == null){
                 numberPositive = 0;
             }
-            Number numberNegative = dao.findJPQLParams(Number.class, negativeSql, customerId, 'R', 'S');
+            Number numberNegative = dao.findJPQLParams(Number.class, negativeSql, customerId, 'R', 'S');//refund or sold
             if(numberNegative == null){
                 numberNegative = 0;
             }
@@ -46,6 +65,9 @@ public class CartInternalApiV2 {
             return Response.status(500).build();
         }
     }
+
+
+
 
     @SecuredUser
     @POST
@@ -115,33 +137,33 @@ public class CartInternalApiV2 {
             wallet.setCreditCharges(0);
             wallet.setBankId(refund.getBankId());
             dao.update(wallet);
-            checkAwaitingCartStatus(cart);
+            checkAwaitingCartStatus(cart.getId());
             return Response.status(201).build();
         }catch (Exception ex){
             return Response.status(500).build();
         }
     }
 
-    private void checkAwaitingCartStatus(Cart cart){
-        String sql = "select b from CartProduct b where b.cartId = :value0 and b.status = :value1";//check if there is any new product
-        List<CartProduct> cartProducts = dao.getJPQLParams(CartProduct.class, sql, cart.getId(), 'N');
+    private void checkAwaitingCartStatus(long cartId){
+        String sql = "select b from CartProduct b where b.cartId = :value0 and b.status = :value1";//check if there is any new cart product
+        List<CartProduct> cartProducts = dao.getJPQLParams(CartProduct.class, sql, cartId, 'N');
         if(cartProducts.isEmpty()){
-            //check if there are any purchased items
+            //check if there are any sold items
             sql = "select b from CartProduct b where b.cartId = :value0 and b.status =:value1";
-            List<CartProduct> purchasedProducts = dao.getJPQLParams(CartProduct.class, sql, cart.getId(), 'P');
-            if(purchasedProducts.isEmpty()){
+            List<CartProduct> soldProducts = dao.getJPQLParams(CartProduct.class, sql, cartId, 'S');
+            if(soldProducts.isEmpty()){
                 //check if there is delivery fee standing
                 sql = "select b from CartDelivery b where b.cartId = :value0 and b.status =:value1";
-                CartDelivery cartDelivery = dao.findJPQLParams(CartDelivery.class, sql, cart.getId(), 'N');//there is waiting cart
+                CartDelivery cartDelivery = dao.findJPQLParams(CartDelivery.class, sql, cartId, 'N');//there is waiting cart
                 if(cartDelivery == null){
+                    Cart cart = dao.find(Cart.class, cartId);
                     cart.setStatus('R');//completely refunded
                     dao.update(cart);
                 }
-                //no new items, and no purchases!
             }else{
-                //no all purchased
-                //cart.setStatus('P');//set cart as all purchased
-                //dao.update(cart);
+                Cart cart = dao.find(Cart.class, cartId);
+                cart.setStatus('S');//set cart as all sold
+                dao.update(cart);
             }
         }
     }
@@ -152,8 +174,8 @@ public class CartInternalApiV2 {
     @Path("carts/awaiting")
     public Response getAwaitingCarts(){
         try {
-            String jpql = "select b from Cart b where b.status = :value0 order by b.created";//N
-            List<Cart> carts = dao.getJPQLParams(Cart.class, jpql, 'N');
+            String jpql = "select b from Cart b where b.status in (:value0 , :value1) order by b.created";//N
+            List<Cart> carts = dao.getJPQLParams(Cart.class, jpql, 'N', 'S');
             for(Cart cart: carts){
                 initCart(cart);
             }
@@ -302,6 +324,40 @@ public class CartInternalApiV2 {
         }
     }
 
+
+    @SecuredUser
+    @POST
+    @Path("wallet/sales")
+    public Response createPostSalesWallet(CustomerWallet customerWallet){
+        try{
+            customerWallet.setCreated(new Date());
+            customerWallet.setWalletType('S');
+            dao.persist(customerWallet);
+            return Response.status(201).build();
+        }catch (Exception ex){
+            return Response.status(500).build();
+        }
+    }
+
+    @SecuredUser
+    @PUT
+    @Path("cart-delivery/sales")
+    public Response updateCartDelivery(Map<String,Object> map){
+        try{
+            if(map != null){
+                long id = ((Number) map.get("id")).longValue();
+                CartDelivery cd = dao.find(CartDelivery.class, id);
+                if(cd.getStatus() == 'N'){
+                    cd.setStatus('S');
+                    dao.update(cd);
+                }
+            }
+            return Response.status(201).build();
+        }catch (Exception ex){
+            return Response.status(500).build();
+        }
+    }
+
     @SecuredUser
     @POST
     @Path("fund-wallet/wire-transfer")
@@ -321,6 +377,7 @@ public class CartInternalApiV2 {
                 }
             }
             async.broadcastToNotification("wireRequests," + async.getWireRequestCount());
+            async.broadcastToNotification("processCarts," + async.getProcessCartCount());
             return Response.status(201).build();
         }catch (Exception ex){
             return Response.status(500).build();
