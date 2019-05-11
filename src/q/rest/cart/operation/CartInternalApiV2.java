@@ -6,14 +6,14 @@ import q.rest.cart.helper.Helper;
 import q.rest.cart.model.entity.*;
 import q.rest.cart.model.privatecontract.FundWalletWireTransfer;
 import q.rest.cart.model.privatecontract.RefundCartRequest;
+import q.rest.cart.model.publiccontract.CartItemRequest;
+import q.rest.cart.model.publiccontract.CartRequest;
 
 import javax.ejb.EJB;
 import javax.ws.rs.*;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @Path("/internal/api/v2/")
 @Consumes(MediaType.APPLICATION_JSON)
@@ -26,6 +26,105 @@ public class CartInternalApiV2 {
     @EJB
     private AsyncService async;
 
+
+    @SecuredUser
+    @POST
+    @Path("cart/wire-transfer")
+    public Response createCartWireTransfer(@HeaderParam("Authorization") String header, Cart cart) {
+        try {
+            //check if cart is not redundant
+            if (isCartRedudant(cart.getCustomerId(), new Date())) {
+                return Response.status(429).entity("Too many requests").build();
+            }
+            createCart(header, cart, 'W');
+            CartWireTransferRequest wireTransfer = createWireTransferRequest(cart);
+            updateCartStatus(cart, 'T');
+            async.sendWireTransferEmail(header, cart, wireTransfer);
+            async.broadcastToNotification("wireRequests," + async.getWireRequestCount());
+            return Response.status(200).build();
+        } catch (Exception ex) {
+            return Response.status(500).build();
+        }
+    }
+
+    private void updateCartStatus(Cart cart, char status) {
+        cart.setStatus(status);//wire transfer status
+        dao.update(cart);
+    }
+
+    private CartWireTransferRequest createWireTransferRequest(Cart cart) {
+        CartWireTransferRequest wireTransfer = new CartWireTransferRequest();
+        wireTransfer.setAmount(cart.getGrandTotal());
+        wireTransfer.setCartId(cart.getId());
+        wireTransfer.setCreated(new Date());
+        wireTransfer.setCreatedBy(cart.getCreatedBy());
+        wireTransfer.setCustomerId(cart.getCustomerId());
+        wireTransfer.setProcessed(null);
+        wireTransfer.setProcessedBy(null);//
+        wireTransfer.setStatus('N');//new, nothing to process
+        dao.persist(wireTransfer);
+        return wireTransfer;
+    }
+
+
+    private void createCart(String header, Cart cart, char paymentMethod){
+        WebApp webApp = getWebAppFromAuthHeader(header);
+        cart.setAppCode(webApp.getAppCode());
+        cart.setCreated(new Date());
+        cart.setStatus('I');//Initial cart, nothing to process yet until its N
+        cart.setVatPercentage(0.05);
+        cart.setPaymentMethod(paymentMethod);
+        dao.persist(cart);
+        for (CartProduct cp: cart.getCartProducts()) {
+            cp.setCartId(cart.getId());
+            cp.setCreated(new Date());
+            cp.setStatus('N');//new, nothing to process yet
+            dao.persist(cp);
+        }
+
+        cart.getCartDelivery().setCartId(cart.getId());
+        cart.getCartDelivery().setCreated(new Date());
+        cart.getCartDelivery().setStatus('N');
+        dao.persist(cart.getCartDelivery());
+        CartDiscount cartDiscount = createCartDiscount(cart);
+        cart.setCartDiscount(cartDiscount);
+    }
+
+
+    private CartDiscount createCartDiscount(Cart cart) {
+        CartDiscount cartDiscount = null;
+        boolean validDiscount = true;
+        try {
+            Discount discount = dao.find(Discount.class, cart.getCartDiscount().getDiscount().getId());
+            if (discount.isCustomerSpecific()) {
+                if (cart.getCustomerId() != discount.getCustomerId()) {
+                    validDiscount = false;
+                }
+            }
+            if (!discount.isReusable()) {
+                if (discount.getStatus() != 'N') {
+                    validDiscount = false;
+                }
+            }
+            if (discount.getExpire().before(new Date())) {
+                validDiscount = false;
+            }
+        } catch (Exception ex) {
+            validDiscount = false;
+        }
+        //move ahead with discount
+        if (validDiscount) {
+            Discount discount = dao.find(Discount.class, cart.getCartDiscount().getDiscount().getId());
+            cartDiscount = new CartDiscount();
+            cartDiscount.setCartId(cart.getId());
+            cartDiscount.setCreated(new Date());
+            cartDiscount.setCreatedBy(0);
+            cartDiscount.setDiscount(discount);
+            dao.persist(cartDiscount);
+        }
+
+        return cartDiscount;
+    }
 
 
     @SecuredUser
@@ -445,6 +544,30 @@ public class CartInternalApiV2 {
         return comments.size() > 0;
     }
 
+
+    // check idempotency of a cart
+    private boolean isCartRedudant(long customerId, Date created) {
+        String jpql = "select b from Cart b where b.customerId = :value0 and b.created between :value1 and :value2";
+        Date previous = Helper.addSeconds(created, -20);
+        List<Cart> carts = dao.getJPQLParams(Cart.class, jpql, customerId, previous, created);
+        return (carts.size() > 0);
+    }
+
+    // qualified
+    private WebApp getWebAppFromAuthHeader(String authHeader) {
+        try {
+            String[] values = authHeader.split("&&");
+            String secret = values[2].trim();
+            WebApp webApp = dao.findTwoConditions(WebApp.class, "appSecret", "active", secret, true);
+            if (webApp == null) {
+                throw new NotAuthorizedException("Unauthorized Access");
+            }
+            // Validate app secret
+            return webApp;
+        } catch (Exception ex) {
+            return null;
+        }
+    }
 
 
 
