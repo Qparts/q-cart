@@ -27,6 +27,7 @@ public class CartInternalApiV2 {
     private AsyncService async;
 
 
+
     @SecuredUser
     @POST
     @Path("cart/wire-transfer")
@@ -264,6 +265,23 @@ public class CartInternalApiV2 {
                 cart.setStatus('S');//set cart as all sold
                 dao.update(cart);
             }
+        }
+    }
+
+
+    @SecuredUser
+    @GET
+    @Path("carts/customer/{customerId}")
+    public Response getCustomerCarts(@PathParam(value = "customerId") long customerId){
+        try {
+            String jpql = "select b from Cart b where b.customerId =:value0 order by b.created";//N
+            List<Cart> carts = dao.getJPQLParams(Cart.class, jpql, customerId);
+            for(Cart cart: carts){
+                initCart(cart);
+            }
+            return Response.status(200).entity(carts).build();
+        }catch (Exception ex){
+            return Response.status(500).build();
         }
     }
 
