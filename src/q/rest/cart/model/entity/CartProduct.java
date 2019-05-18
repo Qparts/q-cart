@@ -3,6 +3,7 @@ package q.rest.cart.model.entity;
 import javax.persistence.*;
 import java.io.Serializable;
 import java.util.Date;
+import java.util.List;
 
 @Entity
 @Table(name="crt_cart_product")
@@ -28,6 +29,8 @@ public class CartProduct implements Serializable {
     private int createdBy;
     @Column(name="status")
     private char status;
+    @Transient
+    private List<CartProductCompare> cartProductCompares;
 
     public long getProductId() {
         return productId;
@@ -93,6 +96,11 @@ public class CartProduct implements Serializable {
         this.status = status;
     }
 
+    public List<CartProductCompare> getCartProductCompares() {
+        return cartProductCompares;
+    }
 
-
+    public void setCartProductCompares(List<CartProductCompare> cartProductCompares) {
+        this.cartProductCompares = cartProductCompares;
+    }
 }

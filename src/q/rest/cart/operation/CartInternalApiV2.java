@@ -49,6 +49,15 @@ public class CartInternalApiV2 {
     }
 
 
+    private void prepareCartProductCompares(List<CartProduct> cps) {
+        for (var cp : cps) {
+            cp.setCartProductCompares(new ArrayList<>());
+            var list = dao.getCondition(CartProductCompare.class, "cartProductId", cp.getId());
+            cp.setCartProductCompares(list);
+        }
+    }
+
+
 
     @SecuredUser
     @POST
@@ -566,11 +575,42 @@ public class CartInternalApiV2 {
 
 
 
+    @SecuredUser
+    @POST
+    @Path("cart-product-compare")
+    public Response createWalletItemVendors(Set<CartProductCompare> cpcs) {
+        try {
+            for (var cpc : cpcs) {
+                if (cpc.getCost() != null) {
+                    var cpcCheck = dao.findTwoConditions(CartProductCompare.class, "vendorId",
+                            "cartProductId", cpc.getVendorId(), cpc.getCartProductId());
+                    if (cpcCheck== null) {
+                        cpc.setDate(new Date());
+                        dao.persist(cpc);
+                    } else {
+                        if (!cpcCheck.getCost().equals(cpc.getCost())) {
+                            cpcCheck.setCost(cpc.getCost());
+                            cpcCheck.setDate(new Date());
+                            dao.update(cpcCheck);
+                        }
+                    }
+                }
+            }
+            return Response.status(201).build();
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            return Response.status(500).build();
+        }
+    }
+
+
+
     private void initCart(Cart cart) throws Exception{
-        List<CartProduct> cartProducts = dao.getCondition(CartProduct.class, "cartId", cart.getId());
-        List<CartComment> cartComments = dao.getCondition(CartComment.class, "cartId", cart.getId());
-        CartDelivery cartDelivery = dao.findCondition(CartDelivery.class, "cartId", cart.getId());
-        CartDiscount cartDiscount = dao.findCondition(CartDiscount.class, "cartId", cart.getId());
+        var cartProducts = dao.getCondition(CartProduct.class, "cartId", cart.getId());
+        prepareCartProductCompares(cartProducts);
+        var cartComments = dao.getCondition(CartComment.class, "cartId", cart.getId());
+        var cartDelivery = dao.findCondition(CartDelivery.class, "cartId", cart.getId());
+        var cartDiscount = dao.findCondition(CartDiscount.class, "cartId", cart.getId());
         cart.setCartProducts(cartProducts);
         cart.setCartComments(cartComments);
         cart.setCartDiscount(cartDiscount);
