@@ -19,7 +19,7 @@ public class CustomerWallet implements Serializable {
     @Column(name="amount")
     private double amount;
     @Column(name="payment_method")
-    private char method;//C = credit card, W= wire transfer!
+    private char method;//C = credit card, W= wire transfer, M = mada, C = credit!
     @Column(name="credit_charges")
     private double creditCharges;
     @Column(name="gateway")

@@ -26,6 +26,28 @@ public class CartInternalApiV2 {
     @EJB
     private AsyncService async;
 
+    @SecuredUser
+    @GET
+    @Path("wallets-report/year/{year}/month/{month}/wallet-type/{walletType}/method/{method}")
+    public Response getQuotationsReport(@PathParam(value = "year") int year,
+                                        @PathParam(value = "month") int month,
+                                        @PathParam(value="walletType") String walletType,
+                                        @PathParam(value = "method") String method){
+        try{
+            Date from = Helper.getFromDate(month, year);
+            Date to = Helper.getToDate(month, year);
+            String jpql = "select b from CustomerWallet b where b.created between :value0 and :value1 and b.walletType ";
+            jpql += (walletType.equals("A") ? "!= :value2" : "= :value2");
+            jpql += " and b.method ";
+            jpql += (method.equals("A") ? "!= :value3" : "= :value3");
+            jpql += " and b.walletType != :value4 order by b.created asc";//sales wallet is removed from report
+            List<CustomerWallet> customerWallets = dao.getJPQLParams(CustomerWallet.class, jpql, from, to, walletType.charAt(0), method.charAt(0), 'S');
+            return Response.status(200).entity(customerWallets).build();
+        }catch (Exception ex){
+            return Response.status(500).build();
+        }
+    }
+
 
 
     @SecuredUser
