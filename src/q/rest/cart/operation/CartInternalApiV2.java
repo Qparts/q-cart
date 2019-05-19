@@ -348,6 +348,21 @@ public class CartInternalApiV2 {
     }
 
 
+
+    @SecuredUser
+    @GET
+    @Path("cart/{cartId}")
+    public Response getCart(@PathParam(value = "cartId") long cartId){
+        try{
+            Cart cart = dao.find(Cart.class, cartId);
+            initCart(cart);
+            return Response.status(200).entity(cart).build();
+        }catch (Exception ex){
+            return Response.status(500).build();
+        }
+    }
+
+
     @SecuredUser
     @GET
     @Path("carts/initiated")
