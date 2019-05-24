@@ -491,7 +491,7 @@ public class CartInternalApiV2 {
     @SecuredUser
     @POST
     @Path("wallet/sales")
-    public Response createPostSalesWallet(CustomerWallet customerWallet){
+    public Response createSalesWallet(CustomerWallet customerWallet){
         try{
             customerWallet.setCreated(new Date());
             customerWallet.setWalletType('S');
@@ -501,6 +501,22 @@ public class CartInternalApiV2 {
             return Response.status(500).build();
         }
     }
+
+
+    @SecuredUser
+    @POST
+    @Path("wallet/sales-return")
+    public Response createSalesReturnWallet(CustomerWallet customerWallet){
+        try{
+            customerWallet.setCreated(new Date());
+            customerWallet.setWalletType('T');
+            dao.persist(customerWallet);
+            return Response.status(201).build();
+        } catch (Exception ex){
+            return Response.status(500).build();
+        }
+    }
+
 
     @SecuredUser
     @PUT
