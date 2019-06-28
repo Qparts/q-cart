@@ -85,7 +85,7 @@ public class CartApiV2 implements Serializable {
             }
             //check payment method
             Cart cart = createAndPrepareCartForPayment(header, cartRequest, 'C');
-            double amount = cart.getGrandTotal();
+            double amount = Helper.round(cart.getGrandTotal(), 2);
             PaymentResponseCC ccr = createMoyassarCreditCardRequest(cartRequest, cart, amount);
             if(ccr == null || ccr.getStatus().equals("failed")){
                 this.updateCartStatus(cart, 'F');
@@ -157,14 +157,38 @@ public class CartApiV2 implements Serializable {
         }
     }
 
+    @SecuredCustomer
+    @GET
+    @Path("discount/promocode/{param}")
+    public Response searchDiscountPromoCode(@HeaderParam("Authorization") String header, @PathParam(value = "param") String code){
+        try{
+            WebApp webApp = getWebAppFromAuthHeader(header);
+            String jpql = "select b from Discount b where b.code = :value0 " +
+                    "and b.expire > :value1 " +
+                    "and b.appCode = :value2 " +
+                    "and b.status = :value3";
+            Discount discount = dao.findJPQLParams(Discount.class, jpql , code, new Date(), webApp.getAppCode(), 'A');
+            if(discount == null){
+                return Response.status(404).build();
+            }
+            if(discount.isCustomerSpecific()){
+                long customerId = getCustomerIdFromAuthHeader(header);
+                if(!discount.getCustomerId().equals(customerId)){
+                    return Response.status(404).build();
+                }
+            }
+            return Response.status(200).entity(discount).build();
+        }catch (Exception ex){
+            return Response.status(500).build();
+        }
+    }
+
     private Cart createAndPrepareCartForPayment(String header, CartRequest cartRequest, char paymentMethod){
-        Cart cart = createCart(header, cartRequest.getCustomerId(), paymentMethod);
+        Cart cart = createCart(header, cartRequest.getCustomerId(), paymentMethod, cartRequest.getDiscountId());
         List<CartProduct> cartProducts = createCartProducts(cart.getId(), cartRequest.getCartItems());
         cart.setCartProducts(cartProducts);
         CartDelivery cartDelivery = createCartDelivery(cart.getId(), cartRequest);
         cart.setCartDelivery(cartDelivery);
-        CartDiscount cartDiscount = createCartDiscount(cart.getId(), cartRequest.getCustomerId(), cartRequest.getDiscountId());
-        cart.setCartDiscount(cartDiscount);
         return cart;
     }
 
@@ -174,7 +198,7 @@ public class CartApiV2 implements Serializable {
         dao.update(cart);
     }
 
-    private Cart createCart(String header, long customerId, char paymentMethod) {
+    private Cart createCart(String header, long customerId, char paymentMethod, Long discountId) {
         WebApp webApp = getWebAppFromAuthHeader(header);
         Cart cart = new Cart();
         cart.setAppCode(webApp.getAppCode());
@@ -184,6 +208,10 @@ public class CartApiV2 implements Serializable {
         cart.setStatus('I');//Initial cart, nothing to process yet until its N
         cart.setVatPercentage(0.05);
         cart.setPaymentMethod(paymentMethod);
+        if(discountId != null){
+            Discount discount = dao.find(Discount.class, discountId);
+            cart.setDiscount(discount);
+        }
         dao.persist(cart);
         return cart;
     }
@@ -217,7 +245,7 @@ public class CartApiV2 implements Serializable {
         paymentRequest.setAmount(Helper.paymentIntegerFormat(amount));
         paymentRequest.setCallbackUrl(AppConstants.getPaymentCallbackUrl(cart.getId()));
         paymentRequest.setCurrency("SAR");
-        paymentRequest.setDescription("QParts Cart # " + cart.getId());
+        paymentRequest.setDescription("Cart # " + cart.getId());
         Response r = this.postSecuredRequestAndLog(AppConstants.MOYASAR_API_URL, paymentRequest, Helper.getMoyaserSecurityHeader());
         if (r.getStatus() == 200 || r.getStatus() == 201) {
             PaymentResponseCC ccr = r.readEntity(PaymentResponseCC.class);
@@ -242,11 +270,15 @@ public class CartApiV2 implements Serializable {
         for (CartItemRequest cir : items) {
             CartProduct cp = new CartProduct();
             cp.setCartId(cartId);
-            cp.setSalesPrice(cir.getSalesPrice());
+            cp.setSalesPrice(Helper.round(cir.getSalesPrice(),2));
             cp.setCreated(new Date());
             cp.setCreatedBy(0);
             cp.setQuantity(cir.getQuantity());
             cp.setProductId(cir.getProductId());
+            if(cir.getDiscountId() != null){
+                Discount discount = dao.find(Discount.class, cir.getDiscountId());
+                cp.setDiscount(discount);
+            }
             cp.setStatus('N');//new, nothing to process yet
             dao.persist(cp);
             cartProducts.add(cp);
@@ -267,46 +299,11 @@ public class CartApiV2 implements Serializable {
         return cartDelivery;
     }
 
-    private CartDiscount createCartDiscount(long cardId, long customerId, Long discountId) {
-        CartDiscount cartDiscount = null;
-        boolean validDiscount = true;
-        try {
-            Discount discount = dao.find(Discount.class, discountId);
-            if (discount.isCustomerSpecific()) {
-                if (customerId != discount.getCustomerId()) {
-                    validDiscount = false;
-                }
-            }
-            if (!discount.isReusable()) {
-                if (discount.getStatus() != 'N') {
-                    validDiscount = false;
-                }
-            }
-            if (discount.getExpire().before(new Date())) {
-                validDiscount = false;
-            }
-        } catch (Exception ex) {
-            validDiscount = false;
-        }
-
-        //move ahead with discount
-        if (validDiscount) {
-            Discount discount = dao.find(Discount.class, discountId);
-            cartDiscount = new CartDiscount();
-            cartDiscount.setCartId(cardId);
-            cartDiscount.setCreated(new Date());
-            cartDiscount.setCreatedBy(0);
-            cartDiscount.setDiscount(discount);
-            dao.persist(cartDiscount);
-        }
-
-        return cartDiscount;
-    }
-
 
 
     private void fundWalletByCreditCard(double amount, double fee, String ccCompany, String transactionId, int createdBy, long customerId){
         CustomerWallet wallet = new CustomerWallet();
+        amount = Helper.round(amount, 2);
         wallet.setAmount(amount);
         wallet.setBankId(null);
         wallet.setBankId(null);
@@ -409,6 +406,17 @@ public class CartApiV2 implements Serializable {
             return webApp;
         } catch (Exception ex) {
             return null;
+        }
+    }
+
+
+    private long getCustomerIdFromAuthHeader(String authHeader) {
+        try {
+            String[] values = authHeader.split("&&");
+            String customerId = values[1].trim();
+            return Long.parseLong(customerId);
+        } catch (Exception ex) {
+            return 0;
         }
     }
 

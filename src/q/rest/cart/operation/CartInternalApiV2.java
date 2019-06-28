@@ -6,8 +6,6 @@ import q.rest.cart.helper.Helper;
 import q.rest.cart.model.entity.*;
 import q.rest.cart.model.privatecontract.FundWalletWireTransfer;
 import q.rest.cart.model.privatecontract.RefundCartRequest;
-import q.rest.cart.model.publiccontract.CartItemRequest;
-import q.rest.cart.model.publiccontract.CartRequest;
 
 import javax.ejb.EJB;
 import javax.ws.rs.*;
@@ -101,7 +99,9 @@ public class CartInternalApiV2 {
 
     private void createCart(String header, Cart cart, char paymentMethod){
         WebApp webApp = getWebAppFromAuthHeader(header);
-        cart.setAppCode(webApp.getAppCode());
+        if(cart.getAppCode() == 0) {
+            cart.setAppCode(webApp.getAppCode());
+        }
         cart.setCreated(new Date());
         cart.setStatus('I');//Initial cart, nothing to process yet until its N
         cart.setVatPercentage(0.05);
@@ -109,53 +109,15 @@ public class CartInternalApiV2 {
         dao.persist(cart);
         for (CartProduct cp: cart.getCartProducts()) {
             cp.setCartId(cart.getId());
+            cp.setSalesPrice(Helper.round(cp.getSalesPrice(), 2));
             cp.setCreated(new Date());
             cp.setStatus('N');//new, nothing to process yet
             dao.persist(cp);
         }
-
         cart.getCartDelivery().setCartId(cart.getId());
         cart.getCartDelivery().setCreated(new Date());
         cart.getCartDelivery().setStatus('N');
         dao.persist(cart.getCartDelivery());
-        CartDiscount cartDiscount = createCartDiscount(cart);
-        cart.setCartDiscount(cartDiscount);
-    }
-
-
-    private CartDiscount createCartDiscount(Cart cart) {
-        CartDiscount cartDiscount = null;
-        boolean validDiscount = true;
-        try {
-            Discount discount = dao.find(Discount.class, cart.getCartDiscount().getDiscount().getId());
-            if (discount.isCustomerSpecific()) {
-                if (cart.getCustomerId() != discount.getCustomerId()) {
-                    validDiscount = false;
-                }
-            }
-            if (!discount.isReusable()) {
-                if (discount.getStatus() != 'N') {
-                    validDiscount = false;
-                }
-            }
-            if (discount.getExpire().before(new Date())) {
-                validDiscount = false;
-            }
-        } catch (Exception ex) {
-            validDiscount = false;
-        }
-        //move ahead with discount
-        if (validDiscount) {
-            Discount discount = dao.find(Discount.class, cart.getCartDiscount().getDiscount().getId());
-            cartDiscount = new CartDiscount();
-            cartDiscount.setCartId(cart.getId());
-            cartDiscount.setCreated(new Date());
-            cartDiscount.setCreatedBy(0);
-            cartDiscount.setDiscount(discount);
-            dao.persist(cartDiscount);
-        }
-
-        return cartDiscount;
     }
 
 
@@ -174,6 +136,22 @@ public class CartInternalApiV2 {
         }
 
     }
+
+
+
+    @SecuredUser
+    @GET
+    @Path("wallets/{customerId}")
+    public Response getCustomerWallets(@PathParam(value = "customerId") long customerId) {
+        try{
+            List<CustomerWallet> wallets = dao.getCondition(CustomerWallet.class, "customerId", customerId);
+            return Response.status(200).entity(wallets).build();
+        }catch (Exception ex){
+            return Response.status(500).build();
+        }
+    }
+
+
 
     @SecuredUser
     @GET
@@ -447,6 +425,28 @@ public class CartInternalApiV2 {
         }
     }
 
+
+
+    @SecuredUser
+    @GET
+    @Path("cart-products/sold/customer/{customerId}")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response getCartSoldProducts(@PathParam(value = "customerId") long customerId) {
+        try {
+            String hql = "select b from CartProduct b where b.status = :value0 and b.cartId in ("
+                    + "select c from Cart c where c.customerId = :value1)";
+            List<CartProduct> cartProducts = dao.getJPQLParams(CartProduct.class, hql, 'S', customerId);
+            for(CartProduct cp : cartProducts){
+                Cart cart = dao.find(Cart.class, cp.getCartId());
+                initCart(cart);
+                cp.setCart(cart);
+            }
+            return Response.status(200).entity(cartProducts).build();
+        } catch (Exception ex) {
+            return Response.status(500).build();
+        }
+    }
+
     @SecuredUser
     @PUT
     @Path("bank")
@@ -495,6 +495,9 @@ public class CartInternalApiV2 {
         try{
             customerWallet.setCreated(new Date());
             customerWallet.setWalletType('S');
+            double amount = Helper.round(customerWallet.getAmount(), 2);
+            customerWallet.setAmount(amount);
+            System.out.println("3 transaction id = " + customerWallet.getTransactionId());
             dao.persist(customerWallet);
             return Response.status(201).build();
         }catch (Exception ex){
@@ -508,6 +511,8 @@ public class CartInternalApiV2 {
     @Path("wallet/sales-return")
     public Response createSalesReturnWallet(CustomerWallet customerWallet){
         try{
+            double amount = Helper.round(customerWallet.getAmount(), 2);
+            customerWallet.setAmount(amount);
             customerWallet.setCreated(new Date());
             customerWallet.setWalletType('T');
             dao.persist(customerWallet);
@@ -549,6 +554,8 @@ public class CartInternalApiV2 {
             List<CustomerWallet> check = dao.getJPQLParams(CustomerWallet.class, jpql, fwwt.getWallet().getCustomerId(), fwwt.getWallet().getTransactionId());
             if(check.isEmpty()){
                 dao.update(fwwt.getWireTransfer());
+                double amount = Helper.round(fwwt.getWallet().getAmount(),2);
+                fwwt.getWallet().setAmount(amount);
                 dao.persist(fwwt.getWallet());
                 if(fwwt.getWireTransfer().getCart().getStatus() == 'T') {
                     fwwt.getWireTransfer().getCart().setStatus('N');
@@ -636,15 +643,135 @@ public class CartInternalApiV2 {
 
 
 
+
+    @POST
+    @Path("new-shipment")
+    @SecuredUser
+    public Response createEmptyWallet(Map<String,Object> map) {
+        try {
+            Long customerId = ((Number) map.get("customerId")).longValue();
+            Long addressId = ((Number) map.get("addressId")).longValue();
+            Shipment s = new Shipment();
+            s.setCustomerId(customerId);
+            s.setCreatedBy(0);
+            s.setCourierId(0);
+            s.setAddressId(addressId);
+            s.setTrackable(false);
+            s.setShipmentFees(0);
+            s.setStatus('W');//Waiting for update
+            dao.persist(s);
+            return Response.status(200).entity(s.getId()).build();
+        }catch(Exception ex) {
+            ex.printStackTrace();
+            return Response.status(500).build();
+        }
+    }
+
+    @SecuredUser
+    @PUT
+    @Path("shipment")
+    public Response createShipment(@HeaderParam("Authorization") String authHeader, Shipment shipment) {
+        try {
+            shipment.setCreated(new Date());
+            shipment.setStatus('S');//Shipped
+            dao.update(shipment);
+            createShipmentItems(shipment);
+            updateCart(shipment);
+            System.out.println("updated cart");
+            async.notifyShipment(authHeader, shipment);
+            return Response.status(201).build();
+        }catch(Exception ex) {
+            return Response.status(500).build();
+        }
+    }
+
+    private void createShipmentItems(Shipment shipment) {
+        for(ShipmentItem item :  shipment.getShipmentItems()) {
+            item.setShipped(new Date());
+            item.setShipmentId(shipment.getId());
+            item.setStatus('S');//shipped
+            dao.persist(item);
+        }
+    }
+
+    @SecuredUser
+    @GET
+    @Path("/shipments/year/{param}/month/{param2}/courier/{param3}/cart/{param4}")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response getWalletsReport(@PathParam(value = "param") int year,
+                                     @PathParam(value = "param2") int month,
+                                     @PathParam(value = "param3") int courierId,
+                                     @PathParam(value = "param4") long cartId) {
+        try {
+            Date from = Helper.getFromDate(month, year);
+            Date to = Helper.getToDate(month, year);
+
+
+            List<Shipment> shipments= new ArrayList<>();
+            String jpql = "select b from Shipment b where b.created between :value0 and :value1";
+
+            if (courierId == 0 && cartId == 0) {
+                jpql = jpql + " order by b.created asc";
+                shipments = dao.getJPQLParams(Shipment.class, jpql, from, to);
+            } else if(courierId > 0 && cartId == 0){
+                jpql = jpql + " and b.courierId = :value2";
+                jpql = jpql + " order by b.created asc";
+                shipments = dao.getJPQLParams(Shipment.class, jpql, from, to, courierId);
+            }else if(courierId == 0 && cartId > 0) {
+                jpql = jpql + " and b.id in (select c.shipmentId from ShipmentItem c where c.cartProduct.cartId = :value2)";
+                jpql = jpql + " order by b.created asc";
+                shipments = dao.getJPQLParams(Shipment.class, jpql, from, to, cartId);
+            }
+            else if (courierId > 0 && cartId > 0) {
+                jpql = jpql + " and b.id in (select c.shipmentId from ShipmentItem c where c.cartProduct.cartId = :value2)";
+                jpql = jpql + " and b.courierId = :value3 ";
+                jpql = jpql + " order by b.created asc";
+                shipments = dao.getJPQLParams(Shipment.class, jpql, from, to, cartId, courierId);
+            }
+
+            for(Shipment sh : shipments) {
+                List<ShipmentItem> items = dao.getCondition(ShipmentItem.class, "shipmentId", sh.getId());
+                sh.setShipmentItems(items);
+            }
+
+            return Response.status(200).entity(shipments).build();
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            return Response.status(500).build();
+        }
+    }
+
+
+
+
+    private void updateCart(Shipment shipment) {
+        Set<Long> set = new HashSet<Long>();
+        for(ShipmentItem item :  shipment.getShipmentItems()) {
+            CartProduct cp = dao.find(CartProduct.class, item.getCartProductId());
+            set.add(cp.getCartId());
+            cp.setStatus('H');
+            dao.update(cp);
+        }
+
+        for(Long cartId : set) {
+            List<CartProduct> wis = dao.getTwoConditions(CartProduct.class, "cartId", "status", cartId, 'S');
+            if(wis.isEmpty()) {
+                Cart cart = dao.find(Cart.class, cartId);
+                cart.setStatus('H');
+                dao.update(cart);
+            }
+        }
+    }
+
+
+
     private void initCart(Cart cart) throws Exception{
         var cartProducts = dao.getCondition(CartProduct.class, "cartId", cart.getId());
         prepareCartProductCompares(cartProducts);
         var cartComments = dao.getCondition(CartComment.class, "cartId", cart.getId());
         var cartDelivery = dao.findCondition(CartDelivery.class, "cartId", cart.getId());
-        var cartDiscount = dao.findCondition(CartDiscount.class, "cartId", cart.getId());
         cart.setCartProducts(cartProducts);
         cart.setCartComments(cartComments);
-        cart.setCartDiscount(cartDiscount);
         cart.setCartDelivery(cartDelivery);
     }
 

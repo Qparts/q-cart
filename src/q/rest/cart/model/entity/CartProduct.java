@@ -1,5 +1,7 @@
 package q.rest.cart.model.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import javax.persistence.*;
 import java.io.Serializable;
 import java.util.Date;
@@ -29,8 +31,45 @@ public class CartProduct implements Serializable {
     private int createdBy;
     @Column(name="status")
     private char status;
+    @JoinColumn(name="discount_id")
+    @ManyToOne
+    private Discount discount;
+    @Transient
+    private Cart cart;
+
     @Transient
     private List<CartProductCompare> cartProductCompares;
+
+
+    @JsonIgnore
+    public double getSalesPriceAfterDiscount(){
+        if(discount != null){
+            if(discount.getDiscountType() == 'P'){
+                return salesPrice - (discount.getPercentage() * salesPrice);
+            }
+        }
+        return salesPrice;
+    }
+
+
+    @JsonIgnore
+    public double getDiscountValue(){
+        if(discount != null){
+            if(discount.getDiscountType() == 'P'){
+                return discount.getPercentage() * salesPrice;
+            }
+        }
+        return 0;
+    }
+
+
+    public Cart getCart() {
+        return cart;
+    }
+
+    public void setCart(Cart cart) {
+        this.cart = cart;
+    }
 
     public long getProductId() {
         return productId;
@@ -94,6 +133,14 @@ public class CartProduct implements Serializable {
 
     public void setStatus(char status) {
         this.status = status;
+    }
+
+    public Discount getDiscount() {
+        return discount;
+    }
+
+    public void setDiscount(Discount discount) {
+        this.discount = discount;
     }
 
     public List<CartProductCompare> getCartProductCompares() {

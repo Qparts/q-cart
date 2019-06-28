@@ -7,6 +7,7 @@ public class AppConstants {
     //SERVICES
     private static final String USER_SERVICE =  SysProps.getValue("userService");
     private static final String CUSTOMER_SERVICE = SysProps.getValue("customerService");
+    private static final String VENDOR_SERVICE = SysProps.getValue("vendorService");
 
     private static final String PAYMENT_CALLBACK_URL_BASE = SysProps.getValue("paymentBaseCallbackUrl");
 //    public final static String MOYASAR_TEST_PUBLISHABLE_KEY = "pk_test_SugzkCgR72VgXxQHiYg7wVYSE7pCzYr5REYwVqQr";
@@ -25,6 +26,8 @@ public class AppConstants {
 
     public static final String POST_WIRE_TRANSFER_EMAIL = CUSTOMER_SERVICE + "email/wire-transfer";
 
+    public static final String POST_NOTIFY_SHIPMENT = CUSTOMER_SERVICE + "notify-shipment";
+
 
 
     public static final String getValidateCustomer(long customerId){
@@ -41,6 +44,10 @@ public class AppConstants {
 
     public static final String getPaymentCallbackUrl(long cartId){
         return PAYMENT_CALLBACK_URL_BASE + "?cartId=" + cartId;
+    }
+
+    public static final String getCourier(int id){
+        return VENDOR_SERVICE + "courier/" + id;
     }
 
 

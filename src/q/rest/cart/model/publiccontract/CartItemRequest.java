@@ -4,6 +4,7 @@ public class CartItemRequest {
     private long productId;
     private int quantity;
     private double salesPrice;
+    private Long discountId;
 
     public long getProductId() {
         return productId;
@@ -27,5 +28,13 @@ public class CartItemRequest {
 
     public void setSalesPrice(double salesPrice) {
         this.salesPrice = salesPrice;
+    }
+
+    public Long getDiscountId() {
+        return discountId;
+    }
+
+    public void setDiscountId(Long discountId) {
+        this.discountId = discountId;
     }
 }

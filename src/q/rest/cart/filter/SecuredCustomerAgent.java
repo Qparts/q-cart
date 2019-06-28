@@ -42,8 +42,8 @@ public class SecuredCustomerAgent implements ContainerRequestFilter {
             String username = values[1].trim();
             String appSecret = values[2].trim();
             String type = values[3].trim();
-
             matchToken(token, username, appSecret, type, header);
+
         }
         catch (Exception ex){
             requestContext.abortWith(Response.status(401).entity("Unauthorized Access").build());

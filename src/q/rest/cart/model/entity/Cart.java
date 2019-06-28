@@ -33,12 +33,13 @@ public class Cart implements Serializable {
     private double vatPercentage;
     @Column(name="payment_method")
     private char paymentMethod;
+    @JoinColumn(name="discount_id")
+    @ManyToOne
+    private Discount discount;
     @Transient
     private List<CartProduct> cartProducts;
     @Transient
     private CartDelivery cartDelivery;
-    @Transient
-    private CartDiscount cartDiscount;
     @Transient
     private List<CartComment> cartComments;
 
@@ -47,7 +48,7 @@ public class Cart implements Serializable {
         double total = 0;
         try{
             for(CartProduct cartProduct : cartProducts){
-                total += (cartProduct.getSalesPrice() * cartProduct.getQuantity());
+                total += (cartProduct.getSalesPriceAfterDiscount() * cartProduct.getQuantity());
             }
 
         }catch(NullPointerException ex){
@@ -68,10 +69,7 @@ public class Cart implements Serializable {
     @JsonIgnore
     public double getDiscountTotal(){
         try{
-            if(cartDiscount.getDiscount().getDiscountType() == 'P'){
-                return -1 * cartDiscount.getDiscount().getPercentage() * getProductsTotal();
-            }
-            if(cartDiscount.getDiscount().getDiscountType() == 'D'){
+            if(discount.getDiscountType() == 'D'){
                 return -1 * getDeliveryFees();
             }
             throw new NullPointerException();
@@ -105,12 +103,13 @@ public class Cart implements Serializable {
         this.cartComments = cartComments;
     }
 
-    public CartDiscount getCartDiscount() {
-        return cartDiscount;
+
+    public Discount getDiscount() {
+        return discount;
     }
 
-    public void setCartDiscount(CartDiscount cartDiscount) {
-        this.cartDiscount = cartDiscount;
+    public void setDiscount(Discount discount) {
+        this.discount = discount;
     }
 
     public CartDelivery getCartDelivery() {

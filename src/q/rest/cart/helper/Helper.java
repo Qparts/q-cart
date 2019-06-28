@@ -10,6 +10,15 @@ public class Helper {
         return random.nextInt(max - min + 1) + min;
     }
 
+    public static double round(double value, int places) {
+        if (places < 0) throw new IllegalArgumentException();
+
+        long factor = (long) Math.pow(10, places);
+        value = value * factor;
+        long tmp = Math.round(value);
+        return (double) tmp / factor;
+    }
+
 
 
     public static Date getToDate(int month, int year) {

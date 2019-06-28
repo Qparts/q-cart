@@ -14,7 +14,7 @@ public class Discount implements Serializable {
     @Column(name="id")
     private long id;
 
-    @Column(name="dicount_type")
+    @Column(name="discount_type")
     private char discountType;//D= delivery value , P = discount percentage.
 
     @Column(name="status")
@@ -49,8 +49,20 @@ public class Discount implements Serializable {
     @Column(name="customer_id")
     private Long customerId;//only if it is for one customer
 
-    @Column(name="percentage")
+    @Column(name="discount_percentage")
     private Double percentage;//--only if type is p (percentage on purchased products)
+
+    @Column(name="app_code")
+    private int appCode;
+
+
+    public int getAppCode() {
+        return appCode;
+    }
+
+    public void setAppCode(int appCode) {
+        this.appCode = appCode;
+    }
 
     public long getId() {
         return id;
