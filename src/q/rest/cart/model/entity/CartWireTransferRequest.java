@@ -20,6 +20,9 @@ public class CartWireTransferRequest implements Serializable {
     @Column(name="cart_id")
     private long cartId;
 
+    @Column(name="wire_type")
+    private char wireType;//F = forward, R = reverse
+
     @Column(name="amount")
     private double amount;
 
@@ -122,5 +125,13 @@ public class CartWireTransferRequest implements Serializable {
 
     public void setProcessedBy(Integer processedBy) {
         this.processedBy = processedBy;
+    }
+
+    public char getWireType() {
+        return wireType;
+    }
+
+    public void setWireType(char wireType) {
+        this.wireType = wireType;
     }
 }

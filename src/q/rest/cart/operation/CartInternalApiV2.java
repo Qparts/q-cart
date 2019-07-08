@@ -24,6 +24,23 @@ public class CartInternalApiV2 {
     @EJB
     private AsyncService async;
 
+
+
+    @SecuredUser
+    @POST
+    @Path("wire-transfer/reverse")
+    public Response createReverseWireTransfer(CartWireTransferRequest wireTransfer){
+        try{
+            wireTransfer.setWireType('R');//reverse
+            wireTransfer.setCreated(new Date());
+            dao.persist(wireTransfer);
+            return Response.status(201).build();
+        }catch (Exception ex){
+            return Response.status(500).build();
+        }
+    }
+
+
     @SecuredUser
     @GET
     @Path("wallets-report/year/{year}/month/{month}/wallet-type/{walletType}/method/{method}")
@@ -67,7 +84,7 @@ public class CartInternalApiV2 {
                 return Response.status(429).entity("Too many requests").build();
             }
             createCart(header, cart, 'W');
-            CartWireTransferRequest wireTransfer = createWireTransferRequest(cart);
+            CartWireTransferRequest wireTransfer = createWireTransferRequest(cart, 'F');
             updateCartStatus(cart, 'T');
             async.sendWireTransferEmail(header, cart, wireTransfer);
             async.broadcastToNotification("wireRequests," + async.getWireRequestCount());
@@ -82,7 +99,7 @@ public class CartInternalApiV2 {
         dao.update(cart);
     }
 
-    private CartWireTransferRequest createWireTransferRequest(Cart cart) {
+    private CartWireTransferRequest createWireTransferRequest(Cart cart, char wireType) {
         CartWireTransferRequest wireTransfer = new CartWireTransferRequest();
         wireTransfer.setAmount(cart.getGrandTotal());
         wireTransfer.setCartId(cart.getId());
@@ -92,6 +109,7 @@ public class CartInternalApiV2 {
         wireTransfer.setProcessed(null);
         wireTransfer.setProcessedBy(null);//
         wireTransfer.setStatus('N');//new, nothing to process
+        wireTransfer.setWireType(wireType);
         dao.persist(wireTransfer);
         return wireTransfer;
     }
@@ -144,7 +162,8 @@ public class CartInternalApiV2 {
     @Path("wallets/{customerId}")
     public Response getCustomerWallets(@PathParam(value = "customerId") long customerId) {
         try{
-            List<CustomerWallet> wallets = dao.getCondition(CustomerWallet.class, "customerId", customerId);
+            String sql = "select b from CustomerWallet b where b.customerId = :value0 order by b.created";
+            List<CustomerWallet> wallets = dao.getJPQLParams(CustomerWallet.class, sql, customerId);
             return Response.status(200).entity(wallets).build();
         }catch (Exception ex){
             return Response.status(500).build();
@@ -158,13 +177,13 @@ public class CartInternalApiV2 {
     @Path("wallet-live/{customerId}")
     public Response getNetWalletAmount(@PathParam(value = "customerId") long customerId) {
         try{
-            String positiveSql = "select sum(b.amount) from CustomerWallet b where b.customerId = :value0 and b.walletType = :value1 ";
-            String negativeSql = "select sum(c.amount) from CustomerWallet c where c.customerId = :value0 and c.walletType in (:value1 , :value2)";
-            Number numberPositive = dao.findJPQLParams(Number.class, positiveSql, customerId, 'P');
+            String positiveSql = "select sum(b.amount) from CustomerWallet b where b.customerId = :value0 and b.walletType in (:value1, :value2) ";
+            String negativeSql = "select sum(c.amount) from CustomerWallet c where c.customerId = :value0 and c.walletType in (:value1 , :value2, :value3)";
+            Number numberPositive = dao.findJPQLParams(Number.class, positiveSql, customerId, 'P', 'T');//payment or sales return
             if(numberPositive == null){
                 numberPositive = 0;
             }
-            Number numberNegative = dao.findJPQLParams(Number.class, negativeSql, customerId, 'R', 'S');//refund or sold
+            Number numberNegative = dao.findJPQLParams(Number.class, negativeSql, customerId, 'R', 'S', 'V');//refund or sold or refund after sales
             if(numberNegative == null){
                 numberNegative = 0;
             }
@@ -522,6 +541,23 @@ public class CartInternalApiV2 {
         }
     }
 
+    @SecuredUser
+    @PUT
+    @Path("cart-delivery/sales-return")
+    public Response updateCartDeliveryReturn(Map<String,Object> map) {
+        try {
+            if (map != null) {
+                long id = ((Number) map.get("id")).longValue();
+                CartDelivery cd = dao.find(CartDelivery.class, id);
+                cd.setStatus('T');
+                dao.update(cd);
+            }
+            return Response.status(201).build();
+        }catch (Exception ex){
+            return Response.status(500).build();
+        }
+    }
+
 
     @SecuredUser
     @PUT
@@ -535,6 +571,24 @@ public class CartInternalApiV2 {
                     cd.setStatus('S');
                     dao.update(cd);
                 }
+            }
+            return Response.status(201).build();
+        }catch (Exception ex){
+            return Response.status(500).build();
+        }
+    }
+
+    @SecuredUser
+    @POST
+    @Path("fund-wallet/sales-return")
+    public Response fundWalletAfterSalesReturn(CustomerWallet wallet){
+        try {
+            wallet.setCreated(new Date());
+            wallet.setAmount(Helper.round(wallet.getAmount(), 2));
+            String jpql = "select b from CustomerWallet b where b.customerId = :value0 and b.transactionId = :value1";
+            List<CustomerWallet> check = dao.getJPQLParams(CustomerWallet.class, jpql, wallet.getCustomerId(), wallet.getTransactionId());
+            if (check.isEmpty()) {
+                dao.persist(wallet);
             }
             return Response.status(201).build();
         }catch (Exception ex){
