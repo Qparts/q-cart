@@ -6,6 +6,7 @@ import q.rest.cart.helper.Helper;
 import q.rest.cart.model.entity.*;
 import q.rest.cart.model.privatecontract.FundWalletWireTransfer;
 import q.rest.cart.model.privatecontract.RefundCartRequest;
+import q.rest.cart.model.publiccontract.CartRequest;
 
 import javax.ejb.EJB;
 import javax.ws.rs.*;
@@ -73,48 +74,34 @@ public class CartInternalApiV2 {
     }
 
 
-
     @SecuredUser
-    @POST
-    @Path("cart/wire-transfer")
-    public Response createCartWireTransfer(@HeaderParam("Authorization") String header, Cart cart) {
-        try {
-            //check if cart is not redundant
-            if (isCartRedudant(cart.getCustomerId(), new Date())) {
-                return Response.status(429).entity("Too many requests").build();
+    @GET
+    @Path("unlocked-wallet-amount/{customerId}")
+    public Response getAvailableWalletAmount(@PathParam(value = "customerId") long customerId){
+        try{
+            List<CustomerWallet> wallets = dao.getTwoConditions(CustomerWallet.class, "customerId", "locked", customerId, false);
+            double amount = 0;
+            for(var w : wallets){
+                amount += w.getAmount();
             }
-            createCart(header, cart, 'W');
-            CartWireTransferRequest wireTransfer = createWireTransferRequest(cart, 'F');
-            updateCartStatus(cart, 'T');
-            async.sendWireTransferEmail(header, cart, wireTransfer);
-            async.broadcastToNotification("wireRequests," + async.getWireRequestCount());
-            return Response.status(200).build();
-        } catch (Exception ex) {
+            Map<String,Object> map = new HashMap<>();
+            map.put("amount", amount);
+            return Response.status(200).entity(map).build();
+        }catch (Exception ex){
             return Response.status(500).build();
         }
     }
+
 
     private void updateCartStatus(Cart cart, char status) {
         cart.setStatus(status);//wire transfer status
         dao.update(cart);
     }
 
-    private CartWireTransferRequest createWireTransferRequest(Cart cart, char wireType) {
-        CartWireTransferRequest wireTransfer = new CartWireTransferRequest();
-        wireTransfer.setAmount(cart.getGrandTotal());
-        wireTransfer.setCartId(cart.getId());
-        wireTransfer.setCreated(new Date());
-        wireTransfer.setCreatedBy(cart.getCreatedBy());
-        wireTransfer.setCustomerId(cart.getCustomerId());
-        wireTransfer.setProcessed(null);
-        wireTransfer.setProcessedBy(null);//
-        wireTransfer.setStatus('N');//new, nothing to process
-        wireTransfer.setWireType(wireType);
-        dao.persist(wireTransfer);
-        return wireTransfer;
-    }
 
 
+
+/*
     private void createCart(String header, Cart cart, char paymentMethod){
         WebApp webApp = getWebAppFromAuthHeader(header);
         if(cart.getAppCode() == 0) {
@@ -137,7 +124,7 @@ public class CartInternalApiV2 {
         cart.getCartDelivery().setStatus('N');
         dao.persist(cart.getCartDelivery());
     }
-
+*/
 
     @SecuredUser
     @PUT
@@ -384,12 +371,15 @@ public class CartInternalApiV2 {
             String jpql = "select b from CartWireTransferRequest b where status = :value0 order by b.created";//N
             List<CartWireTransferRequest> wires = dao.getJPQLParams(CartWireTransferRequest.class, jpql, 'N');
             for(CartWireTransferRequest wire : wires){
-                Cart cart = dao.find(Cart.class, wire.getCartId());
-                initCart(cart);
-                wire.setCart(cart);
+                if(wire.getPaymentPurpose().equals("cart")) {
+                    Cart cart = dao.find(Cart.class, wire.getCartId());
+                    initCart(cart);
+                    wire.setCart(cart);
+                }
             }
             return Response.status(200).entity(wires).build();
         }catch (Exception ex){
+            ex.printStackTrace();
             return Response.status(500).build();
         }
     }
@@ -403,9 +393,11 @@ public class CartInternalApiV2 {
         try {
             String jpql = "select b from CartWireTransferRequest b where b.id = :value0 and status = :value1";//N
             CartWireTransferRequest wire = dao.findJPQLParams(CartWireTransferRequest.class, jpql, wireId, 'N');
-            Cart cart = dao.find(Cart.class, wire.getCartId());
-            initCart(cart);
-            wire.setCart(cart);
+            if(wire.getPaymentPurpose().equals("cart")) {
+                Cart cart = dao.find(Cart.class, wire.getCartId());
+                initCart(cart);
+                wire.setCart(cart);
+            }
             return Response.status(200).entity(wire).build();
         }catch (Exception ex){
             return Response.status(500).build();
@@ -610,10 +602,19 @@ public class CartInternalApiV2 {
                 dao.update(fwwt.getWireTransfer());
                 double amount = Helper.round(fwwt.getWallet().getAmount(),2);
                 fwwt.getWallet().setAmount(amount);
+                if(fwwt.getWireTransfer().getPaymentPurpose().equals("quotation")){
+                    fwwt.getWallet().setLocked(false);
+                }
                 dao.persist(fwwt.getWallet());
-                if(fwwt.getWireTransfer().getCart().getStatus() == 'T') {
-                    fwwt.getWireTransfer().getCart().setStatus('N');
-                    dao.update(fwwt.getWireTransfer().getCart());
+                if(fwwt.getWireTransfer().getPaymentPurpose().equals("cart")) {
+                    if (fwwt.getWireTransfer().getCart().getStatus() == 'T') {
+                        fwwt.getWireTransfer().getCart().setStatus('N');
+                        dao.update(fwwt.getWireTransfer().getCart());
+                        for(CartUsedWallet usedWallet : fwwt.getWireTransfer().getCart().getCartUsedWallets()){
+                            usedWallet.setStatus('N');
+                            dao.update(usedWallet);
+                        }
+                    }
                 }
             }
             async.broadcastToNotification("wireRequests," + async.getWireRequestCount());
@@ -817,6 +818,14 @@ public class CartInternalApiV2 {
         }
     }
 
+    private boolean isWalletAmountValid(long customerId, double walletAmount){
+        List<CustomerWallet> customerWallets = dao.getTwoConditions(CustomerWallet.class, "customerId", "locked", customerId, false);
+        double availableAmount = 0;
+        for(CustomerWallet cw : customerWallets){
+            availableAmount += cw.getAmount();
+        }
+        return (walletAmount == availableAmount);
+    }
 
 
     private void initCart(Cart cart) throws Exception{
@@ -824,8 +833,10 @@ public class CartInternalApiV2 {
         prepareCartProductCompares(cartProducts);
         var cartComments = dao.getCondition(CartComment.class, "cartId", cart.getId());
         var cartDelivery = dao.findCondition(CartDelivery.class, "cartId", cart.getId());
+        var cartUsedWallet = dao.getCondition(CartUsedWallet.class, "cartId", cart.getId());
         cart.setCartProducts(cartProducts);
         cart.setCartComments(cartComments);
+        cart.setCartUsedWallets(cartUsedWallet);
         cart.setCartDelivery(cartDelivery);
     }
 

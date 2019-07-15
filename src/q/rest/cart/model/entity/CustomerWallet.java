@@ -1,6 +1,5 @@
 package q.rest.cart.model.entity;
 
-import javax.inject.Named;
 import javax.persistence.*;
 import java.io.Serializable;
 import java.util.Date;
@@ -38,6 +37,8 @@ public class CustomerWallet implements Serializable {
     private String ccCompany;
     @Column(name="bank_id")
     private Integer bankId;
+    @Column(name="locked")
+    private boolean locked;
 
     public long getId() {
         return id;
@@ -141,5 +142,13 @@ public class CustomerWallet implements Serializable {
 
     public void setBankId(Integer bankId) {
         this.bankId = bankId;
+    }
+
+    public boolean isLocked() {
+        return locked;
+    }
+
+    public void setLocked(boolean locked) {
+        this.locked = locked;
     }
 }

@@ -1,5 +1,6 @@
 package q.rest.cart.helper;
 
+import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.util.*;
 
@@ -63,8 +64,7 @@ public class Helper {
     public static String getMoyaserSecurityHeader() {
         try {
             String input = AppConstants.MOYASAR_KEY;
-            byte bytes[] ;
-            bytes = input.getBytes("ISO-8859-1");
+            byte bytes[] =input.getBytes(StandardCharsets.ISO_8859_1);
             String key= Base64.getEncoder().encodeToString(bytes);
             return "Basic " + key;
         } catch (Exception e) {

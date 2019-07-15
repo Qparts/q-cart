@@ -11,6 +11,9 @@ public class CartRequest implements Serializable {
     private Long discountId;
     private Integer preferredCuorier;
     private List<CartItemRequest> cartItems;
+    private double walletAmount;
+    private Integer appCode;
+    private Integer createdBy;
 
     private Integer ccMonth;
     private Integer ccYear;
@@ -106,4 +109,27 @@ public class CartRequest implements Serializable {
         this.discountId = discountId;
     }
 
+    public double getWalletAmount() {
+        return walletAmount;
+    }
+
+    public void setWalletAmount(double walletAmount) {
+        this.walletAmount = walletAmount;
+    }
+
+    public Integer getAppCode() {
+        return appCode;
+    }
+
+    public void setAppCode(Integer appCode) {
+        this.appCode = appCode;
+    }
+
+    public Integer getCreatedBy() {
+        return createdBy;
+    }
+
+    public void setCreatedBy(Integer createdBy) {
+        this.createdBy = createdBy;
+    }
 }

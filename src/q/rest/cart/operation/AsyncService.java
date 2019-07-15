@@ -30,8 +30,27 @@ public class AsyncService implements Serializable {
         List<Bank> banks = dao.getCondition(Bank.class, "customerStatus", 'A');
         Map<String, Object> map = new HashMap<String,Object>();
         map.put("cartId", cart.getId());
+        map.put("quotationId", wire.getQuotationId());
         map.put("customerId", cart.getCustomerId());
         map.put("wireTransferId", wire.getId());
+        map.put("purpose", "cart");
+        map.put("amount", wire.getAmount());
+        map.put("banks", banks);
+        Response r = postSecuredRequest(AppConstants.POST_WIRE_TRANSFER_EMAIL, map, authHeader);
+    }
+
+
+
+    @Asynchronous
+    public void sendWireTransferEmail(String authHeader, long quotationId, long customerId, CartWireTransferRequest wire){
+        List<Bank> banks = dao.getCondition(Bank.class, "customerStatus", 'A');
+        Map<String, Object> map = new HashMap<String,Object>();
+        System.out.println(quotationId);
+        map.put("quotationId", quotationId);
+        map.put("cartId", wire.getCartId());
+        map.put("customerId", customerId);
+        map.put("wireTransferId", wire.getId());
+        map.put("purpose", "quotation");
         map.put("amount", wire.getAmount());
         map.put("banks", banks);
         Response r = postSecuredRequest(AppConstants.POST_WIRE_TRANSFER_EMAIL, map, authHeader);

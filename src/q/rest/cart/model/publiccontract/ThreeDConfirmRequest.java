@@ -6,7 +6,16 @@ public class ThreeDConfirmRequest {
     private String status;
     private long customerId;
     private long cartId;
+    private long quotationId;
+    private Character type;
 
+    public Character getType() {
+        return type;
+    }
+
+    public void setType(Character type) {
+        this.type = type;
+    }
 
     public String getId() {
         return id;
@@ -38,5 +47,13 @@ public class ThreeDConfirmRequest {
 
     public void setCartId(long cartId) {
         this.cartId = cartId;
+    }
+
+    public long getQuotationId() {
+        return quotationId;
+    }
+
+    public void setQuotationId(long quotationId) {
+        this.quotationId = quotationId;
     }
 }

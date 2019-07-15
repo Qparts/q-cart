@@ -42,6 +42,8 @@ public class Cart implements Serializable {
     private CartDelivery cartDelivery;
     @Transient
     private List<CartComment> cartComments;
+    @Transient
+    private List<CartUsedWallet> cartUsedWallets;
 
     @JsonIgnore
     public double getProductsTotal(){
@@ -90,8 +92,22 @@ public class Cart implements Serializable {
     }
 
     @JsonIgnore
+    public double getUsedWalletAmount(){
+        double total = 0;
+        for(CartUsedWallet wallet : cartUsedWallets){
+            total += wallet.getCustomerWallet().getAmount();
+        }
+        return total;
+    }
+
+    @JsonIgnore
     public double getGrandTotal(){
         return getSubTotal() + getVat();
+    }
+
+    @JsonIgnore
+    public double getGrandTotalWithUsedWallet(){
+        return getGrandTotal() - getUsedWalletAmount();
     }
 
 
@@ -192,5 +208,11 @@ public class Cart implements Serializable {
         this.vatPercentage = vatPercentage;
     }
 
+    public List<CartUsedWallet> getCartUsedWallets() {
+        return cartUsedWallets;
+    }
 
+    public void setCartUsedWallets(List<CartUsedWallet> cartUsedWallets) {
+        this.cartUsedWallets = cartUsedWallets;
+    }
 }

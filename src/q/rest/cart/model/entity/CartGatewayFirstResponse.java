@@ -22,6 +22,12 @@ public class CartGatewayFirstResponse implements Serializable {
     @Column(name="cart_id")
     private long cartId;
 
+    @Column(name="quotation_id")
+    private long quotationId;
+
+    @Column(name="payment_purpose")
+    private String paymentPurpose;
+
     @Column(name="customer_id")
     private long customerId;
 
@@ -75,6 +81,34 @@ public class CartGatewayFirstResponse implements Serializable {
     public CartGatewayFirstResponse() {
     }
 
+
+    public CartGatewayFirstResponse(PaymentResponseCC ccr, long quotationId, long customerId, int createdBy) {
+        this.quotationId = quotationId;
+        this.customerId = customerId;
+        this.created = new Date();
+        this.createdBy = createdBy;
+        this.gPaymentId = ccr.getId();
+        this.gStatus = ccr.getStatus();
+        this.paymentPurpose = "quotation";
+        if(gStatus.equals("initiated"))
+            this.status = 'I';//initiated
+        else if(gStatus.equals("succeeded"))
+            this.status = 'P';//paid
+        else
+            this.status = 'F';//failed
+        this.gAmount = ccr.getAmount();
+        this.gFee = ccr.getFee();
+        this.gCurrency = ccr.getCurrency();
+        this.gDiscription = ccr.getDescription();
+        this.gCallback = ccr.getCallback();
+        this.gType = ccr.getSource().getType();
+        this.gCompany = ccr.getSource().getCompany();
+        this.gName = ccr.getSource().getName();
+        this.gNumber = ccr.getSource().getNumber();
+        this.gMessage = ccr.getSource().getMessage();
+        this.gTransactionUrl = ccr.getSource().getTransactionURL();
+    }
+
     public CartGatewayFirstResponse(PaymentResponseCC ccr, Cart cart, int createdBy) {
         this.cartId = cart.getId();
         this.customerId = cart.getCustomerId();
@@ -82,7 +116,7 @@ public class CartGatewayFirstResponse implements Serializable {
         this.createdBy = createdBy;
         this.gPaymentId = ccr.getId();
         this.gStatus = ccr.getStatus();
-
+        this.paymentPurpose = "cart";
         if(gStatus.equals("initiated"))
             this.status = 'I';//initiated
         else if(gStatus.equals("succeeded"))
@@ -256,5 +290,21 @@ public class CartGatewayFirstResponse implements Serializable {
 
     public void setCreatedBy(int createdBy) {
         this.createdBy = createdBy;
+    }
+
+    public String getPaymentPurpose() {
+        return paymentPurpose;
+    }
+
+    public void setPaymentPurpose(String paymentPurpose) {
+        this.paymentPurpose = paymentPurpose;
+    }
+
+    public long getQuotationId() {
+        return quotationId;
+    }
+
+    public void setQuotationId(long quotationId) {
+        this.quotationId = quotationId;
     }
 }
