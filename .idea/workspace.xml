@@ -93,8 +93,8 @@
       <file pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/src/q/rest/cart/helper/SysProps.java">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="348">
-              <caret line="41" column="55" selection-start-line="41" selection-start-column="55" selection-end-line="41" selection-end-column="55" />
+            <state relative-caret-position="363">
+              <caret line="42" column="37" selection-start-line="42" selection-start-column="37" selection-end-line="42" selection-end-column="37" />
             </state>
           </provider>
         </entry>
@@ -268,7 +268,7 @@
     <property name="Repository.Attach.Sources" value="false" />
     <property name="WebServerToolWindowFactoryState" value="true" />
     <property name="aspect.path.notification.shown" value="true" />
-    <property name="com.android.tools.idea.instantapp.provision.ProvisionBeforeRunTaskProvider.myTimeStamp" value="1563175697643" />
+    <property name="com.android.tools.idea.instantapp.provision.ProvisionBeforeRunTaskProvider.myTimeStamp" value="1563175952194" />
     <property name="com.intellij.testIntegration.createTest.CreateTestDialog.defaultLibrary" value="JUnit4" />
     <property name="com.intellij.testIntegration.createTest.CreateTestDialog.defaultLibrarySuperClass.Arquillian JUnit4" value="" />
     <property name="com.intellij.testIntegration.createTest.CreateTestDialog.defaultLibrarySuperClass.JUnit4" value="" />
@@ -408,7 +408,7 @@
       <workItem from="1562430277891" duration="1655000" />
       <workItem from="1562613343182" duration="2479000" />
       <workItem from="1562742908701" duration="14521000" />
-      <workItem from="1563046890635" duration="21924000" />
+      <workItem from="1563046890635" duration="22207000" />
     </task>
     <servers />
   </component>
@@ -424,7 +424,7 @@
     </history-entry>
   </component>
   <component name="TimeTrackingManager">
-    <option name="totallyTimeSpent" value="192408000" />
+    <option name="totallyTimeSpent" value="192691000" />
   </component>
   <component name="TodoView">
     <todo-panel id="selected-file">
@@ -439,7 +439,7 @@
     <frame x="0" y="27" width="1440" height="792" extended-state="0" />
     <editor active="true" />
     <layout>
-      <window_info active="true" content_ui="combo" id="Project" order="0" visible="true" weight="0.3211731" />
+      <window_info content_ui="combo" id="Project" order="0" visible="true" weight="0.3211731" />
       <window_info id="Structure" order="1" side_tool="true" weight="0.25" />
       <window_info id="Designer" order="2" />
       <window_info id="Persistence" order="3" side_tool="true" weight="0.3297568" />
@@ -450,7 +450,7 @@
       <window_info id="Web" order="8" side_tool="true" />
       <window_info anchor="bottom" id="Message" order="0" />
       <window_info anchor="bottom" id="Find" order="1" />
-      <window_info anchor="bottom" id="Run" order="2" sideWeight="0.49928162" visible="true" />
+      <window_info active="true" anchor="bottom" id="Run" order="2" sideWeight="0.49928162" visible="true" />
       <window_info anchor="bottom" id="Debug" order="3" weight="0.4" />
       <window_info anchor="bottom" id="Cvs" order="4" weight="0.25" />
       <window_info anchor="bottom" id="Inspection" order="5" weight="0.4" />
@@ -1059,8 +1059,8 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/src/q/rest/cart/helper/SysProps.java">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="348">
-          <caret line="41" column="55" selection-start-line="41" selection-start-column="55" selection-end-line="41" selection-end-column="55" />
+        <state relative-caret-position="363">
+          <caret line="42" column="37" selection-start-line="42" selection-start-column="37" selection-end-line="42" selection-end-column="37" />
         </state>
       </provider>
     </entry>
