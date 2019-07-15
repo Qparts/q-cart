@@ -39,6 +39,7 @@ public class SysProps {
 
     public static String getValue(String key){
         Object o = prop.get(key);
+        System.out.println("reading from sys_config" + o.toString());
         return prop.get(key).toString();
     }
 
