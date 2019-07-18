@@ -4,6 +4,7 @@ import q.rest.cart.dao.DAO;
 import q.rest.cart.filter.LoggingFilter;
 import q.rest.cart.filter.Secured;
 import q.rest.cart.filter.SecuredCustomer;
+import q.rest.cart.filter.ValidApp;
 import q.rest.cart.helper.AppConstants;
 import q.rest.cart.helper.Helper;
 import q.rest.cart.model.entity.*;
@@ -241,7 +242,7 @@ public class CartApiV2 implements Serializable {
         }
     }
 
-    @SecuredCustomer
+    @ValidApp
     @GET
     @Path("banks")
     public Response getActiveBanksCustomer() {
