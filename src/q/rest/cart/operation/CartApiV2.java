@@ -78,6 +78,7 @@ public class CartApiV2 implements Serializable {
     @Path("quotation/wire-transfer")
     public Response createQuotationWireTransfer(@HeaderParam("Authorization") String header, QuotationPaymentRequest qpr){
         try{
+            System.out.println("received");
             WebApp webApp = getWebAppFromAuthHeader(header);
             //check if same customer is creating the call and that prices are valid
             if(webApp.getAppCode() == 3) {
