@@ -90,6 +90,7 @@ public class CartApiV2 implements Serializable {
             async.broadcastToNotification("wireRequests," + async.getWireRequestCount());
             return Response.status(201).build();
         }catch (Exception ex){
+            ex.printStackTrace();
             return Response.status(500).build();
         }
     }
