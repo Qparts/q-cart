@@ -14,7 +14,6 @@ public class CartRequest implements Serializable {
     private double walletAmount;
     private Integer appCode;
     private Integer createdBy;
-
     private Integer ccMonth;
     private Integer ccYear;
     private String ccName;

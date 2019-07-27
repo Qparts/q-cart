@@ -244,13 +244,15 @@ public class CartInternalApiV2 {
             double vat = total * 0.05;
             wallet.setCreated(new Date());
             wallet.setWalletType('R');
-            wallet.setAmount(total + vat);
+            double roundedTotal = Helper.round(total+vat, 2);
+            wallet.setAmount(roundedTotal);
             wallet.setMethod('W');
             wallet.setCreatedBy(refund.getCreatedBy());
             wallet.setTransactionId("refund via wire");
             wallet.setCurrency("SAR");
             wallet.setCreditCharges(0);
             wallet.setBankId(refund.getBankId());
+            wallet.setLocked(true);
             dao.update(wallet);
             checkAwaitingCartStatus(cart.getId());
             return Response.status(201).build();

@@ -1,7 +1,7 @@
 package q.rest.cart.model.publiccontract;
 
 public class CartItemRequest {
-    private long productId;
+        private long productId;
     private int quantity;
     private double salesPrice;
     private Long discountId;

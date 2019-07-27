@@ -78,7 +78,6 @@ public class CartApiV2 implements Serializable {
     @Path("quotation/wire-transfer")
     public Response createQuotationWireTransfer(@HeaderParam("Authorization") String header, QuotationPaymentRequest qpr){
         try{
-            System.out.println("received");
             WebApp webApp = getWebAppFromAuthHeader(header);
             //check if same customer is creating the call and that prices are valid
             if(webApp.getAppCode() == 3) {
@@ -169,7 +168,6 @@ public class CartApiV2 implements Serializable {
             updateLocked(cart);
             Map<String, Object> map = new HashMap<>();
             map.put("cartId", cart.getId());
-
             if(ccr.getStatus().equals("succeeded")){
                 async.broadcastToNotification("processCarts," + async.getProcessCartCount());
                 return Response.status(200).entity(map).build();
