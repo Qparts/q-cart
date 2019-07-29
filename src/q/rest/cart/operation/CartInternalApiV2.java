@@ -6,7 +6,6 @@ import q.rest.cart.helper.Helper;
 import q.rest.cart.model.entity.*;
 import q.rest.cart.model.privatecontract.FundWalletWireTransfer;
 import q.rest.cart.model.privatecontract.RefundCartRequest;
-import q.rest.cart.model.publiccontract.CartRequest;
 
 import javax.ejb.EJB;
 import javax.ws.rs.*;
@@ -255,6 +254,24 @@ public class CartInternalApiV2 {
             wallet.setLocked(true);
             dao.update(wallet);
             checkAwaitingCartStatus(cart.getId());
+            return Response.status(201).build();
+        }catch (Exception ex){
+            return Response.status(500).build();
+        }
+    }
+
+
+    @SecuredUser
+    @POST
+    @Path("wallet/manual")
+    public Response createManualWallet(CustomerWallet wallet){
+        try{
+            wallet.setAmount(Helper.round(wallet.getAmount(), 2));
+            if(isWalletRedundant(wallet.getCustomerId(), wallet.getCreated(), wallet.getAmount())){
+                return Response.status(429).build();
+            }
+            wallet.setCreated(new Date());
+            dao.persist(wallet);
             return Response.status(201).build();
         }catch (Exception ex){
             return Response.status(500).build();
@@ -848,6 +865,15 @@ public class CartInternalApiV2 {
         List<CartComment> comments = dao.getJPQLParams(CartComment.class, jpql, comment.getCreatedBy(), comment.getText(), comment.getCartId(),  previous, comment.getCreated());
         return comments.size() > 0;
     }
+
+
+    private boolean isWalletRedundant(long customerId, Date created, double amount){
+        String jpql = "select b from CustomerWallet b where b.customerId = :value0 and b.created between :value1 and :value2 and b.amount = :value3";
+        Date previous = Helper.addSeconds(created, -20);
+        List<CustomerWallet> wallets = dao.getJPQLParams(CustomerWallet.class, jpql, customerId, previous, created, amount);
+        return wallets.size() > 0;
+    }
+
 
 
     // check idempotency of a cart
