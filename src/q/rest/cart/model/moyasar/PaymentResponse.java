@@ -1,5 +1,6 @@
 package q.rest.cart.model.moyasar;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 
@@ -21,6 +22,12 @@ public class PaymentResponse {
 	private Integer refunded;//0 in payment
 	@JsonProperty("refunded_at")
 	private String refundedAt;//null is default
+	@JsonProperty("captured")
+	private Integer captured;
+	@JsonProperty("captured_at")
+	private String capturedAt;
+	@JsonProperty("voided_at")
+	private String voidedAt;
 	@JsonProperty("description")
 	private String description;//payment desc
 	@JsonProperty("amount_format")
@@ -29,6 +36,8 @@ public class PaymentResponse {
 	private String feeFormat;
 	@JsonProperty("refunded_format")
 	private String refundedFormat;
+	@JsonProperty("captured_format")
+	private String capturedFormat;
 	@JsonProperty("invoice_id")
 	private String invoiceId;//null is default
 	@JsonProperty("ip")
@@ -141,7 +150,36 @@ public class PaymentResponse {
 	public void setFee(Integer fee) {
 		this.fee = fee;
 	}
-	
-	
-	
+
+	public Integer getCaptured() {
+		return captured;
+	}
+
+	public void setCaptured(Integer captured) {
+		this.captured = captured;
+	}
+
+	public String getCapturedAt() {
+		return capturedAt;
+	}
+
+	public void setCapturedAt(String capturedAt) {
+		this.capturedAt = capturedAt;
+	}
+
+	public String getVoidedAt() {
+		return voidedAt;
+	}
+
+	public void setVoidedAt(String voidedAt) {
+		this.voidedAt = voidedAt;
+	}
+
+	public String getCapturedFormat() {
+		return capturedFormat;
+	}
+
+	public void setCapturedFormat(String capturedFormat) {
+		this.capturedFormat = capturedFormat;
+	}
 }
