@@ -93,7 +93,7 @@ public class CartApiV2 implements Serializable {
     }
 
 
-    //in qetaa only now
+    //in qetaa only now !! delete no need anymore
     @SecuredCustomer
     @POST
     @Path("quotation/credit-card")
@@ -126,10 +126,82 @@ public class CartApiV2 implements Serializable {
         }
     }
 
-
     @SecuredCustomer
     @POST
     @Path("cart/credit-card")
+    public Response createCartCreditCard2(@HeaderParam("Authorization") String header, CartRequest cartRequest){
+        try{
+            if (!isValidCreditCardInfo(cartRequest)) {
+                return Response.status(400).entity("Invalid credit card information").build();
+            }
+            if(!isWalletAmountValid(cartRequest.getCustomerId(), cartRequest.getWalletAmount())){
+                return Response.status(400).build();
+            }
+            //check if same customer is creating the call and that prices are valid
+            if (!isValidCustomerOperation(header, cartRequest.getCustomerId())
+                    || !isValidPrices(header, cartRequest)) {
+                return Response.status(401).entity("Invalid access").build();
+            }
+
+            //check if cart is not redundant
+            if (isRedudant(cartRequest.getCustomerId(), new Date())) {
+                return Response.status(429).entity("Too many requests").build();
+            }
+            //check payment method
+
+            Cart cart = createCart(header, cartRequest, 'C');//
+            createCartProducts(cart, cartRequest.getCartItems());
+            createCartDelivery(cart, cartRequest);
+            createUsedWallets(cart, cartRequest);
+
+            cartRequest.getPaymentRequest().setCartId(cart.getId());
+            cartRequest.getPaymentRequest().setDescription("QETAA-Cart: " + cart.getId());
+            cartRequest.getPaymentRequest().setPlanDiscount(cart.getUsedWalletAmount());
+            double amount = Helper.round(cart.getGrandTotalWithUsedWallet(), 2);
+
+            Response r = this.postSecuredRequest(AppConstants.POST_CART_PAYMENT, cartRequest.getPaymentRequest() , header);
+            //possible outcomes
+            if(r.getStatus() == 400){
+                //bad credit card request
+                this.updateCartStatus(cart, 'F');
+                return Response.status(400).entity("bad request from gateway").build();
+            }
+            if(r.getStatus() == 401){
+                //declined
+                this.updateCartStatus(cart, 'F');
+                Map<String,String> mp = r.readEntity(Map.class);
+                String reason = mp.get("message");
+                return Response.status(401).entity(reason).build();
+            }
+            updateLocked(cart);
+            if(r.getStatus() == 202){
+                Map<String, Object> resmap = r.readEntity(Map.class);
+                String transactionUrl = (String) resmap.get("url");
+                Map<String,Object> mp = new HashMap<>();
+                mp.put("transactionUrl", transactionUrl);
+                mp.put("cartId", cart.getId());
+                return Response.status(202).entity(mp).build();
+            }
+            if(r.getStatus() == 200){
+                this.fundWalletByCreditCard(amount, 0, "", "some id", 0, cart.getCustomerId(), true);
+                //update cart status
+                this.updateCartStatus(cart, 'N');
+                async.broadcastToNotification("processCarts," + async.getProcessCartCount());
+                //success
+                Map<String, Object> map = new HashMap<>();
+                map.put("cartId", cart.getId());
+                return Response.status(200).entity(map).build();
+            }
+            throw new Exception();
+        } catch (Exception ex) {
+            return Response.status(500).build();
+        }
+    }
+
+
+    @SecuredCustomer
+    @POST
+    @Path("cart/credit-card2")
     public Response createCartCreditCard(@HeaderParam("Authorization") String header, CartRequest cartRequest) {
         try {
             if (!isValidCreditCardInfo(cartRequest)) {
@@ -185,6 +257,45 @@ public class CartApiV2 implements Serializable {
         }
     }
 
+
+    @SecuredCustomer
+    @PUT
+    @Path("cart-payment")
+    public Response confirmCartPayment(@HeaderParam("Authorization") String header, Map<String,Object> map){
+        try{
+            Long cartId = ((Number) map.get("cartId")).longValue();
+            String paymentStatus = (String) map.get("paymentStatus");
+            Cart cart = dao.find(Cart.class, cartId);
+            if(paymentStatus.equals("failed")){
+                cart.setStatus('F');
+                dao.update(cart);
+            }
+            else{
+                //get amount from invoice service
+                System.out.println(header);
+                System.out.println(AppConstants.getCartPaymentAmount(cart.getId()));
+                Response r = this.getSecuredRequest(AppConstants.getCartPaymentAmount(cart.getId()), header);
+                System.out.println(9 + " " + r.getStatus());
+                if(r.getStatus() == 200){
+                    Map<String,Object> mp = r.readEntity(Map.class);
+                    double base = (double) mp.get("baseAmount");
+                    double walletUsedAmount = (double) mp.get("planDiscount");
+                    double promoDiscount = (double) mp.get("promoDiscount");
+                    double vatPercentage = (double) mp.get("vatPercentage");
+                    double sub = base - promoDiscount;
+                    double vatAmount = vatPercentage * sub;
+                    double net = sub + vatAmount;
+                    double grand = net - walletUsedAmount;
+                    fundWalletByCreditCard(grand, 0, "", "some id", 0 , cart.getCustomerId(), true);
+                    cart.setStatus('N');
+                }
+            }
+            dao.update(cart);
+            return Response.status(201).build();
+        }catch (Exception ex){
+            return Response.status(500).build();
+        }
+    }
 
     @SecuredCustomer
     @PUT
@@ -391,7 +502,7 @@ public class CartApiV2 implements Serializable {
         cc.setName(qpr.getCardHolder().getCcName());
         cc.setNumber(qpr.getCardHolder().getCcNumber());
 
-        PaymentRequest paymentRequest = new PaymentRequestCC();
+        PaymentRequestMoy paymentRequest = new PaymentRequestCC();
         ((PaymentRequestCC) paymentRequest).setSource(cc);
         paymentRequest.setAmount(Helper.paymentIntegerFormat(qpr.getAmount()));
         paymentRequest.setCallbackUrl(AppConstants.getQuotationPaymentCallbackUrl(qpr.getQuotationId(), 3));
@@ -423,7 +534,7 @@ public class CartApiV2 implements Serializable {
         cc.setName(cartRequest.getCcName());
         cc.setNumber(cartRequest.getCcNumber());
 
-        PaymentRequest paymentRequest = new PaymentRequestCC();
+        PaymentRequestMoy paymentRequest = new PaymentRequestCC();
         ((PaymentRequestCC) paymentRequest).setSource(cc);
         paymentRequest.setAmount(Helper.paymentIntegerFormat(amount));
         paymentRequest.setCallbackUrl(AppConstants.getPaymentCallbackUrl(cart));
@@ -495,7 +606,7 @@ public class CartApiV2 implements Serializable {
         wallet.setCreditCharges(fee);
         wallet.setCurrency("SAR");
         wallet.setCustomerId(customerId);
-        wallet.setGateway("Moyasar");
+        wallet.setGateway("Tap");
         wallet.setMethod('C');//credit card
         wallet.setTransactionId(transactionId);
         wallet.setWalletType('P');

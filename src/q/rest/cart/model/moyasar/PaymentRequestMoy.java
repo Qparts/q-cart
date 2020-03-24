@@ -6,7 +6,7 @@ import com.fasterxml.jackson.annotation.JsonSubTypes;
 @JsonSubTypes({
         @JsonSubTypes.Type(value = PaymentRequestCC.class, name = "source")
 })
-public class PaymentRequest {
+public class PaymentRequestMoy {
 
     @JsonProperty("amount")
     private int amount;

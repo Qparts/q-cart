@@ -3,7 +3,7 @@ package q.rest.cart.model.moyasar;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 
-public class PaymentRequestCC extends PaymentRequest{
+public class PaymentRequestCC extends PaymentRequestMoy {
 	
 	@JsonProperty("source")
 	private RequestSourceCC source;

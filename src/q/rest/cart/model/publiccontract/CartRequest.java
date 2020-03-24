@@ -19,6 +19,15 @@ public class CartRequest implements Serializable {
     private String ccName;
     private String ccNumber;
     private String ccCvc;
+    private PaymentRequest paymentRequest;
+
+    public PaymentRequest getPaymentRequest() {
+        return paymentRequest;
+    }
+
+    public void setPaymentRequest(PaymentRequest paymentRequest) {
+        this.paymentRequest = paymentRequest;
+    }
 
     public String getCcCvc() {
         return ccCvc;

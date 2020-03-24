@@ -2,6 +2,7 @@ package q.rest.cart.operation;
 
 import q.rest.cart.dao.DAO;
 import q.rest.cart.filter.SecuredUser;
+import q.rest.cart.filter.SecuredUserVendor;
 import q.rest.cart.helper.Helper;
 import q.rest.cart.model.entity.*;
 import q.rest.cart.model.privatecontract.FundWalletWireTransfer;
@@ -490,7 +491,7 @@ public class CartInternalApiV2 {
     }
 
 
-    @SecuredUser
+    @SecuredUserVendor
     @GET
     @Path("banks")
     public Response getAllBanks() {
