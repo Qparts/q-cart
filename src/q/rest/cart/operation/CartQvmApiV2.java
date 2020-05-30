@@ -59,8 +59,6 @@ public class CartQvmApiV2 {
         }
     }
 
-
-
     @SecuredVendor
     @Path("purchase-order/target/{vendorId}")
     @GET

@@ -1,5 +1,6 @@
 package q.rest.cart.operation;
 
+import com.fasterxml.jackson.databind.exc.UnrecognizedPropertyException;
 import q.rest.cart.dao.DAO;
 import q.rest.cart.filter.*;
 import q.rest.cart.helper.AppConstants;
@@ -55,6 +56,7 @@ public class CartApiV2 implements Serializable {
             createCartProducts(cart, cartRequest.getCartItems());
             createCartDelivery(cart, cartRequest);
             createUsedWallets(cart, cartRequest);
+
             double amount = Helper.round(cart.getGrandTotalWithUsedWallet(), 2);
             CartWireTransferRequest wireTransfer = createWireTransferRequest(cart.getId(), 0, cartRequest.getCustomerId(), amount, 'F', "cart");
             updateCartStatus(cart, 'T');
@@ -129,38 +131,24 @@ public class CartApiV2 implements Serializable {
     @SecuredCustomer
     @POST
     @Path("cart/credit-card")
-    public Response createCartCreditCard2(@HeaderParam("Authorization") String header, CartRequest cartRequest){
+    public Response createCartCreditCard2(@HeaderParam("Authorization") String header, CartRequest cartRequest) {
         try{
-            if (!isValidCreditCardInfo(cartRequest)) {
-                return Response.status(400).entity("Invalid credit card information").build();
-            }
-            if(!isWalletAmountValid(cartRequest.getCustomerId(), cartRequest.getWalletAmount())){
-                return Response.status(400).build();
-            }
-            //check if same customer is creating the call and that prices are valid
-            if (!isValidCustomerOperation(header, cartRequest.getCustomerId())
-                    || !isValidPrices(header, cartRequest)) {
-                return Response.status(401).entity("Invalid access").build();
-            }
-
             //check if cart is not redundant
             if (isRedudant(cartRequest.getCustomerId(), new Date())) {
                 return Response.status(429).entity("Too many requests").build();
             }
-            //check payment method
 
             Cart cart = createCart(header, cartRequest, 'C');//
             createCartProducts(cart, cartRequest.getCartItems());
             createCartDelivery(cart, cartRequest);
             createUsedWallets(cart, cartRequest);
-
             cartRequest.getPaymentRequest().setCartId(cart.getId());
             cartRequest.getPaymentRequest().setDescription("QETAA-Cart: " + cart.getId());
-            cartRequest.getPaymentRequest().setPlanDiscount(cart.getUsedWalletAmount());
+//            cartRequest.getPaymentRequest().setPlanDiscount(cart.getUsedWalletAmount());
             double amount = Helper.round(cart.getGrandTotalWithUsedWallet(), 2);
-
             Response r = this.postSecuredRequest(AppConstants.POST_CART_PAYMENT, cartRequest.getPaymentRequest() , header);
             //possible outcomes
+            System.out.println(2 +" " +  r.getStatus());
             if(r.getStatus() == 400){
                 //bad credit card request
                 this.updateCartStatus(cart, 'F');
@@ -173,7 +161,9 @@ public class CartApiV2 implements Serializable {
                 String reason = mp.get("message");
                 return Response.status(401).entity(reason).build();
             }
+            System.out.println(3 +" " +  r.getStatus());
             updateLocked(cart);
+            System.out.println(4);
             if(r.getStatus() == 202){
                 Map<String, Object> resmap = r.readEntity(Map.class);
                 String transactionUrl = (String) resmap.get("url");
@@ -182,6 +172,7 @@ public class CartApiV2 implements Serializable {
                 mp.put("cartId", cart.getId());
                 return Response.status(202).entity(mp).build();
             }
+            System.out.println(5);
             if(r.getStatus() == 200){
                 this.fundWalletByCreditCard(amount, 0, "", "some id", 0, cart.getCustomerId(), true);
                 //update cart status
@@ -619,8 +610,6 @@ public class CartApiV2 implements Serializable {
         Response r = this.getSecuredRequest(AppConstants.getValidateCustomer(customerId), header);
         return r.getStatus() == 204;
     }
-
-
 
     private boolean isValidCreditCardInfo(CartRequest cartRequest) {
         boolean valid = true;

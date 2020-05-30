@@ -12,7 +12,10 @@ public class PaymentRequest implements Serializable {
     private long quotationId;
     private long cartId;
     private int planId;
+    private int promoId;
     private int optionDuration;
+    private int optionDurationActual;
+    private int optionId;
     private double baseAmount;
     private double planDiscount;
     private double promoDiscount;
@@ -24,11 +27,11 @@ public class PaymentRequest implements Serializable {
     private boolean threeDSecure;
     private String description;
     //card info
-    private Number number;
-    private Integer expMonth;
-    private Integer expYear;
-    private Integer cvc;
-    private String nameOnCard;
+//    private Number number;
+ //   private Integer expMonth;
+  //  private Integer expYear;
+  //  private Integer cvc;
+  //  private String nameOnCard;
     private String country;
     //customer or vendor user
     private String firstName;
@@ -192,46 +195,6 @@ public class PaymentRequest implements Serializable {
         this.description = description;
     }
 
-    public Number getNumber() {
-        return number;
-    }
-
-    public void setNumber(Number number) {
-        this.number = number;
-    }
-
-    public Integer getExpMonth() {
-        return expMonth;
-    }
-
-    public void setExpMonth(Integer expMonth) {
-        this.expMonth = expMonth;
-    }
-
-    public Integer getExpYear() {
-        return expYear;
-    }
-
-    public void setExpYear(Integer expYear) {
-        this.expYear = expYear;
-    }
-
-    public Integer getCvc() {
-        return cvc;
-    }
-
-    public void setCvc(Integer cvc) {
-        this.cvc = cvc;
-    }
-
-    public String getNameOnCard() {
-        return nameOnCard;
-    }
-
-    public void setNameOnCard(String nameOnCard) {
-        this.nameOnCard = nameOnCard;
-    }
-
     public String getCountry() {
         return country;
     }
@@ -302,5 +265,29 @@ public class PaymentRequest implements Serializable {
 
     public void setMimeType(String mimeType) {
         this.mimeType = mimeType;
+    }
+
+    public int getOptionDurationActual() {
+        return optionDurationActual;
+    }
+
+    public void setOptionDurationActual(int optionDurationActual) {
+        this.optionDurationActual = optionDurationActual;
+    }
+
+    public int getOptionId() {
+        return optionId;
+    }
+
+    public void setOptionId(int optionId) {
+        this.optionId = optionId;
+    }
+
+    public int getPromoId() {
+        return promoId;
+    }
+
+    public void setPromoId(int promoId) {
+        this.promoId = promoId;
     }
 }
