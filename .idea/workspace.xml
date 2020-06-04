@@ -7,8 +7,8 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="09229477-df13-422d-8a98-23c54b7d78d3" name="Default Changelist" comment="">
-      <change afterPath="$PROJECT_DIR$/build19.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/build15.xml" beforeDir="false" afterPath="$PROJECT_DIR$/build15.xml" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -219,7 +219,7 @@
       <workItem from="1589838921886" duration="272000" />
       <workItem from="1590406485869" duration="10261000" />
       <workItem from="1590797090606" duration="2159000" />
-      <workItem from="1591301978453" duration="86000" />
+      <workItem from="1591301978453" duration="287000" />
     </task>
     <servers />
   </component>
@@ -336,6 +336,10 @@
       <screen x="0" y="23" width="1440" height="801" />
     </state>
     <state x="208" y="23" key="SettingsEditor/0.23.1440.801@0.23.1440.801" timestamp="1590798894263" />
+    <state x="445" y="224" key="git4idea.merge.GitPullDialog" timestamp="1591302145430">
+      <screen x="0" y="23" width="1440" height="806" />
+    </state>
+    <state x="445" y="224" key="git4idea.merge.GitPullDialog/0.23.1440.806@0.23.1440.806" timestamp="1591302145430" />
     <state width="600" height="424" key="javadoc.popup" timestamp="1586547014366">
       <screen x="0" y="23" width="1440" height="801" />
     </state>
