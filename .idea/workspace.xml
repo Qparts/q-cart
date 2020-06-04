@@ -7,15 +7,8 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="09229477-df13-422d-8a98-23c54b7d78d3" name="Default Changelist" comment="">
-      <change afterPath="$PROJECT_DIR$/src/q/rest/cart/filter/MyApplicationException.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/build19.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/out/production/q-rest-cart/q/rest/cart/filter/SecuredCustomerAgent.class" beforeDir="false" afterPath="$PROJECT_DIR$/out/production/q-rest-cart/q/rest/cart/filter/SecuredCustomerAgent.class" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/q/rest/cart/filter/SecuredAgent.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/q/rest/cart/filter/SecuredAgent.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/q/rest/cart/filter/SecuredCustomerAgent.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/q/rest/cart/filter/SecuredCustomerAgent.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/q/rest/cart/model/publiccontract/CartItemRequest.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/q/rest/cart/model/publiccontract/CartItemRequest.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/q/rest/cart/model/publiccontract/PaymentRequest.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/q/rest/cart/model/publiccontract/PaymentRequest.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/q/rest/cart/operation/CartApiV2.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/q/rest/cart/operation/CartApiV2.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/q/rest/cart/operation/CartQvmApiV2.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/q/rest/cart/operation/CartQvmApiV2.java" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -54,6 +47,7 @@
     <property name="Repository.Attach.Annotations" value="false" />
     <property name="Repository.Attach.JavaDocs" value="false" />
     <property name="Repository.Attach.Sources" value="false" />
+    <property name="RunOnceActivity.ShowReadmeOnStart" value="true" />
     <property name="WebServerToolWindowFactoryState" value="true" />
     <property name="aspect.path.notification.shown" value="true" />
     <property name="com.android.tools.idea.instantapp.provision.ProvisionBeforeRunTaskProvider.myTimeStamp" value="1563511711984" />
@@ -61,10 +55,10 @@
     <property name="com.intellij.testIntegration.createTest.CreateTestDialog.defaultLibrarySuperClass.Arquillian JUnit4" value="" />
     <property name="com.intellij.testIntegration.createTest.CreateTestDialog.defaultLibrarySuperClass.JUnit4" value="" />
     <property name="create.test.in.the.same.root" value="true" />
-    <property name="last_opened_file_path" value="$PROJECT_DIR$/src/q/rest/cart/model/entity" />
+    <property name="last_opened_file_path" value="$PROJECT_DIR$/web" />
     <property name="nodejs_interpreter_path.stuck_in_default_project" value="undefined stuck path" />
     <property name="nodejs_npm_path_reset_for_default_project" value="true" />
-    <property name="project.structure.last.edited" value="Artifacts" />
+    <property name="project.structure.last.edited" value="Modules" />
     <property name="project.structure.proportion" value="0.15" />
     <property name="project.structure.side.proportion" value="0.2" />
     <property name="settings.editor.selected.configurable" value="reference.settingsdialog.IDE.editor.colors.Language Defaults" />
@@ -73,12 +67,11 @@
     <key name="CreateTestDialog.RecentsKey">
       <recent name="q.rest.cart.operation" />
     </key>
-    <key name="CreateClassDialog.RecentsKey">
-      <recent name="q.rest.cart.model.entity" />
-      <recent name="q.rest.cart.operation" />
-    </key>
     <key name="CreateTestDialog.Recents.Supers">
       <recent name="" />
+    </key>
+    <key name="MoveFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$" />
     </key>
     <key name="CopyClassDialog.RECENTS_KEY">
       <recent name="q.rest.cart.filter" />
@@ -88,11 +81,15 @@
       <recent name="q.rest.cart.operation.sockets" />
     </key>
     <key name="CopyFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$/web" />
       <recent name="$PROJECT_DIR$/src/q/rest/cart/model/entity" />
       <recent name="$PROJECT_DIR$/src/q/rest/cart/filter" />
       <recent name="$PROJECT_DIR$/web/WEB-INF" />
       <recent name="$PROJECT_DIR$" />
-      <recent name="$PROJECT_DIR$/src/q/rest/cart/model/moyasar" />
+    </key>
+    <key name="CreateClassDialog.RecentsKey">
+      <recent name="q.rest.cart.model.entity" />
+      <recent name="q.rest.cart.operation" />
     </key>
   </component>
   <component name="RunManager">
@@ -154,11 +151,6 @@
               <path>
                 <item name="services root" type="e789fda9:ObjectUtils$Sentinel" />
                 <item name="JBoss Server" type="7427dc5b:ServiceModel$ServiceGroupNode" />
-              </path>
-              <path>
-                <item name="services root" type="e789fda9:ObjectUtils$Sentinel" />
-                <item name="JBoss Server" type="7427dc5b:ServiceModel$ServiceGroupNode" />
-                <item name="Running" type="7427dc5b:ServiceModel$ServiceGroupNode" />
               </path>
             </expand>
             <select />
@@ -226,6 +218,8 @@
       <workItem from="1586544437917" duration="8794000" />
       <workItem from="1589838921886" duration="272000" />
       <workItem from="1590406485869" duration="10261000" />
+      <workItem from="1590797090606" duration="2159000" />
+      <workItem from="1591301978453" duration="86000" />
     </task>
     <servers />
   </component>
@@ -270,6 +264,10 @@
       <screen x="0" y="23" width="1440" height="804" />
     </state>
     <state x="533" y="116" key="#com.intellij.ide.util.MemberChooser/0.23.1440.804@0.23.1440.804" timestamp="1590441894936" />
+    <state x="558" y="109" key="#com.intellij.openapi.roots.ui.configuration.libraryEditor.LibraryEditorDialog" timestamp="1590798892859">
+      <screen x="0" y="23" width="1440" height="801" />
+    </state>
+    <state x="558" y="109" key="#com.intellij.openapi.roots.ui.configuration.libraryEditor.LibraryEditorDialog/0.23.1440.801@0.23.1440.801" timestamp="1590798892859" />
     <state width="958" height="205" key="GridCell.Tab.0.bottom" timestamp="1590525550035">
       <screen x="0" y="23" width="1440" height="808" />
     </state>
@@ -334,6 +332,10 @@
     <state width="937" height="203" key="GridCell.Tab.1.right/0.23.1440.801@0.23.1440.801" timestamp="1586946796980" />
     <state width="958" height="205" key="GridCell.Tab.1.right/0.23.1440.804@0.23.1440.804" timestamp="1590437217329" />
     <state width="958" height="205" key="GridCell.Tab.1.right/0.23.1440.808@0.23.1440.808" timestamp="1590525550033" />
+    <state x="208" y="23" key="SettingsEditor" timestamp="1590798894263">
+      <screen x="0" y="23" width="1440" height="801" />
+    </state>
+    <state x="208" y="23" key="SettingsEditor/0.23.1440.801@0.23.1440.801" timestamp="1590798894263" />
     <state width="600" height="424" key="javadoc.popup" timestamp="1586547014366">
       <screen x="0" y="23" width="1440" height="801" />
     </state>
